@@ -1,9 +1,13 @@
 <template>
   <div>
     <div class="fullscreen-canvas" ref="container"></div>
+    <div class="balance">{{ balance }} Ubxs</div>
     <div class="house-info" v-if="show">
-      Buy House with UBXS
-      <span @click="show = false">x</span>
+      <div class="header">
+        <span>Buy House with UBXS</span>
+        <span @click="closeModel()">x</span>
+      </div>
+      <button class="buy-button" @click="buy()">Buy</button>
     </div>
   </div>
 </template>
@@ -21,6 +25,16 @@ export default {
   setup() {
     const container = ref({});
     const show = ref(false);
+    const balance = ref(7000000);
+    const closeModel = () => {
+      show.value = false;
+      document.body.requestPointerLock();
+    };
+    const buy = () => {
+      balance.value = 4000000;
+      show.value = false;
+      document.body.requestPointerLock();
+    };
     onMounted(() => {
       const clock = new THREE.Clock();
 
@@ -35,6 +49,9 @@ export default {
       );
       camera.rotation.order = "YXZ";
 
+      /**
+       * Light
+       */
       const fillLight1 = new THREE.HemisphereLight(0x4488bb, 0x002244, 0.5);
       fillLight1.position.set(2, 1, 1);
       scene.add(fillLight1);
@@ -54,6 +71,9 @@ export default {
       directionalLight.shadow.bias = -0.00006;
       scene.add(directionalLight);
 
+      /**
+       * Renderer
+       */
       const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
@@ -82,7 +102,7 @@ export default {
 
       const playerVelocity = new THREE.Vector3();
       const playerDirection = new THREE.Vector3();
-      playerVelocity.y = 60;
+      // playerVelocity.y = 60;
       camera.rotation.x = -0.44;
       let playerOnFloor = false;
 
@@ -279,7 +299,7 @@ export default {
         requestAnimationFrame(animate);
       }
     });
-    return { container, show };
+    return { container, show, closeModel, balance, buy };
   },
 };
 </script>
@@ -311,8 +331,29 @@ body {
   width: 50vw;
   border-radius: 10px;
   background: gray;
+
+  padding: 30px;
+}
+.header {
   display: flex;
   justify-content: space-between;
-  padding: 30px;
+}
+.balance {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 150px;
+  height: 50px;
+  background: gray;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+}
+.buy-button {
+  width: 150px;
+  height: 50px;
+  border-radius: 10px;
+  font-size: 16px;
 }
 </style>
