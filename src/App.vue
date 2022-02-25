@@ -19,6 +19,7 @@ import Stats from "stats.js";
 import { Capsule } from "three/examples/jsm/math/Capsule.js";
 import { Octree } from "three/examples/jsm/math/Octree.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
 
 export default {
@@ -115,21 +116,64 @@ export default {
       /**
        * Mouse
        */
+      let mixer;
+      let animations = {};
       const mouse = new THREE.Vector2();
-      loader.load("person.glb", (gltf) => {
-        console.log("gltf :>> ", gltf);
-        avatar = gltf.scene;
+      let walk;
+      let run;
+      let idle;
+      let dance;
+      const loaderFBX = new FBXLoader();
+      loaderFBX.setPath("./resources/zombie/");
+      loaderFBX.load("mremireh_o_desbiens.fbx", (fbx) => {
+        fbx.scale.setScalar(0.01);
+        fbx.traverse((c) => {
+          c.castShadow = true;
+        });
+
+        avatar = fbx;
         avatar.rotation.order = "YXZ";
+
         scene.add(avatar);
 
-        // animate();
-        loader.load("VillageUnity.glb", (gltf) => {
-          scene.add(gltf.scene);
-          // console.log("gltf :>> ", gltf);
-          worldOctree.fromGraphNode(scene);
+        mixer = new THREE.AnimationMixer(avatar);
 
-          animate();
+        const OnLoad = (animName, anim) => {
+          const clip = anim.animations[0];
+          const action = mixer.clipAction(clip);
+
+          animations[animName] = {
+            clip: clip,
+            action: action,
+          };
+        };
+
+        const animationLoader = new FBXLoader();
+        animationLoader.setPath("./resources/zombie/");
+        animationLoader.load("walk.fbx", (a) => {
+          OnLoad("walk", a);
+          walk = mixer.clipAction(animations.walk.clip);
         });
+        animationLoader.load("run.fbx", (a) => {
+          OnLoad("run", a);
+          run = mixer.clipAction(animations.run.clip);
+        });
+        animationLoader.load("idle.fbx", (a) => {
+          OnLoad("idle", a);
+          idle = mixer.clipAction(animations.idle.clip);
+        });
+        animationLoader.load("dance.fbx", (a) => {
+          OnLoad("dance", a);
+          dance = mixer.clipAction(animations.dance.clip);
+        });
+        console.log("animations :>> ", animations);
+      });
+
+      loader.load("VillageUnity.glb", (gltf) => {
+        scene.add(gltf.scene);
+        worldOctree.fromGraphNode(scene);
+        idle.play();
+        animate();
       });
 
       const GRAVITY = 30;
@@ -140,8 +184,8 @@ export default {
 
       const playerCollider = new Capsule(
         new THREE.Vector3(0, 0.35, 0),
-        new THREE.Vector3(0, 1, 0),
-        0.35
+        new THREE.Vector3(0, -5, 0),
+        0.1
       );
 
       const playerVelocity = new THREE.Vector3();
@@ -151,13 +195,32 @@ export default {
       let playerOnFloor = false;
 
       const keyStates = {};
+      let state = "";
 
+      mixer = new THREE.AnimationMixer(avatar);
       document.addEventListener("keydown", (event) => {
         keyStates[event.code] = true;
+        if (keyStates["KeyW"]) {
+          if (state !== "run") {
+            run.time = 0.0;
+            run.setEffectiveTimeScale(1.0);
+            run.setEffectiveWeight(1.0);
+            run.crossFadeFrom(idle, 0.5, true);
+            run.play();
+            state = "run";
+          }
+        }
       });
 
       document.addEventListener("keyup", (event) => {
         keyStates[event.code] = false;
+        if (!keyStates["KeyW"]) {
+          // idle.timeScale = 500;
+          idle.time = 0.0;
+          idle.crossFadeFrom(run, 0.1, true);
+          idle.play();
+          state = "";
+        }
       });
 
       container.value.addEventListener("mousedown", () => {
@@ -166,7 +229,6 @@ export default {
 
       document.addEventListener("mouseup", () => {
         if (document.pointerLockElement !== null) {
-          console.log("currentIntersect :>> ", currentIntersect);
           if (currentIntersect) {
             show.value = true;
             document.exitPointerLock();
@@ -182,7 +244,6 @@ export default {
             avatar.rotation.x - event.movementY / 500 < 0.2
           )
             avatar.rotation.x -= event.movementY / 500;
-          console.log("event.movementY / 500 :>> ", avatar.rotation.x);
         }
       });
 
@@ -250,17 +311,17 @@ export default {
           playerVelocity.add(getForwardVector().multiplyScalar(speedDelta));
         }
 
-        if (keyStates["KeyS"]) {
-          playerVelocity.add(getForwardVector().multiplyScalar(-speedDelta));
-        }
+        // if (keyStates["KeyS"]) {
+        //   playerVelocity.add(getForwardVector().multiplyScalar(-speedDelta));
+        // }
 
-        if (keyStates["KeyA"]) {
-          playerVelocity.add(getSideVector().multiplyScalar(-speedDelta));
-        }
+        // if (keyStates["KeyA"]) {
+        //   playerVelocity.add(getSideVector().multiplyScalar(-speedDelta));
+        // }
 
-        if (keyStates["KeyD"]) {
-          playerVelocity.add(getSideVector().multiplyScalar(speedDelta));
-        }
+        // if (keyStates["KeyD"]) {
+        //   playerVelocity.add(getSideVector().multiplyScalar(speedDelta));
+        // }
         if (playerOnFloor) {
           if (keyStates["Space"]) {
             playerVelocity.y = 15;
@@ -315,7 +376,6 @@ export default {
         mouse.x = (window.innerWidth / 2 / window.innerWidth) * 2 - 1;
         mouse.y = -(window.innerHeight / 2 / window.innerHeight) * 2 + 1;
         raycaster.setFromCamera(mouse, camera);
-        // console.log(" scene.children[1].children[6] :>> ", scene.children[2]);
         if (scene.children[2] && scene.children[2].children[6]) {
           const intersects = raycaster.intersectObjects([
             scene.children[2].children[6],
@@ -336,7 +396,9 @@ export default {
         }
 
         renderer.render(scene, camera);
-
+        if (mixer) {
+          mixer.update(clock.getDelta());
+        }
         stats.update();
 
         requestAnimationFrame(animate);
