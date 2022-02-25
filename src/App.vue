@@ -19,6 +19,7 @@ import Stats from "stats.js";
 import { Capsule } from "three/examples/jsm/math/Capsule.js";
 import { Octree } from "three/examples/jsm/math/Octree.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
 
 export default {
   name: "App",
@@ -49,6 +50,12 @@ export default {
       );
       camera.rotation.order = "YXZ";
 
+      // var geometry = new THREE.BoxBufferGeometry(0.2, 0.2, 0.2);
+      // var material = new THREE.MeshNormalMaterial();
+      let avatar;
+      // const avatar = new THREE.Mesh(geometry, material);
+      // scene.add(avatar);
+      // avatar.rotation.order = "YXZ";
       /**
        * Light
        */
@@ -62,6 +69,7 @@ export default {
       directionalLight.shadow.camera.near = 0.01;
       directionalLight.shadow.camera.far = 500;
       directionalLight.shadow.camera.right = 30;
+      camera;
       directionalLight.shadow.camera.left = -30;
       directionalLight.shadow.camera.top = 30;
       directionalLight.shadow.camera.bottom = -30;
@@ -88,9 +96,45 @@ export default {
       stats.domElement.style.top = "0px";
       container.value.appendChild(stats.domElement);
 
+      window.addEventListener("resize", onWindowResize);
+
+      function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      const loader = new GLTFLoader().setPath("./models/");
+      /**
+       * Raycaster
+       */
+      const raycaster = new THREE.Raycaster();
+      raycaster.far = 4;
+
+      /**
+       * Mouse
+       */
+      const mouse = new THREE.Vector2();
+      loader.load("person.glb", (gltf) => {
+        console.log("gltf :>> ", gltf);
+        avatar = gltf.scene;
+        avatar.rotation.order = "YXZ";
+        scene.add(avatar);
+
+        // animate();
+        loader.load("VillageUnity.glb", (gltf) => {
+          scene.add(gltf.scene);
+          // console.log("gltf :>> ", gltf);
+          worldOctree.fromGraphNode(scene);
+
+          animate();
+        });
+      });
+
       const GRAVITY = 30;
 
-      const STEPS_PER_FRAME = 2;
+      const STEPS_PER_FRAME = 5;
 
       const worldOctree = new Octree();
 
@@ -102,8 +146,8 @@ export default {
 
       const playerVelocity = new THREE.Vector3();
       const playerDirection = new THREE.Vector3();
-      // playerVelocity.y = 60;
-      camera.rotation.x = -0.44;
+      // playerVelocity.y = 30;
+      // camera.rotation.x = -0.44;
       let playerOnFloor = false;
 
       const keyStates = {};
@@ -132,19 +176,15 @@ export default {
 
       document.body.addEventListener("mousemove", (event) => {
         if (document.pointerLockElement === document.body) {
-          camera.rotation.y -= event.movementX / 500;
-          camera.rotation.x -= event.movementY / 500;
+          avatar.rotation.y -= event.movementX / 500;
+          if (
+            avatar.rotation.x - event.movementY / 500 > -0.2 &&
+            avatar.rotation.x - event.movementY / 500 < 0.2
+          )
+            avatar.rotation.x -= event.movementY / 500;
+          console.log("event.movementY / 500 :>> ", avatar.rotation.x);
         }
       });
-
-      window.addEventListener("resize", onWindowResize);
-
-      function onWindowResize() {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      }
 
       function playerCollisions() {
         const result = worldOctree.capsuleIntersect(playerCollider);
@@ -182,11 +222,11 @@ export default {
 
         playerCollisions();
 
-        camera.position.copy(playerCollider.end);
+        avatar.position.copy(playerCollider.end);
       }
 
       function getForwardVector() {
-        camera.getWorldDirection(playerDirection);
+        avatar.getWorldDirection(playerDirection);
         playerDirection.y = 0;
         playerDirection.normalize();
 
@@ -194,10 +234,10 @@ export default {
       }
 
       function getSideVector() {
-        camera.getWorldDirection(playerDirection);
+        avatar.getWorldDirection(playerDirection);
         playerDirection.y = 0;
         playerDirection.normalize();
-        playerDirection.cross(camera.up);
+        playerDirection.cross(avatar.up);
 
         return playerDirection;
       }
@@ -228,36 +268,29 @@ export default {
         }
       }
 
-      const loader = new GLTFLoader().setPath("./models/");
-      /**
-       * Raycaster
-       */
-      const raycaster = new THREE.Raycaster();
-      raycaster.far = 4;
-
-      /**
-       * Mouse
-       */
-      const mouse = new THREE.Vector2();
-
-      loader.load("VillageUnity.glb", (gltf) => {
-        scene.add(gltf.scene);
-        console.log("gltf :>> ", gltf);
-        worldOctree.fromGraphNode(gltf.scene);
-
-        animate();
-      });
-
       function teleportPlayerIfOob() {
-        if (camera.position.y <= -25) {
+        if (avatar.position.y <= -25) {
           playerCollider.start.set(0, 0.35, 0);
           playerCollider.end.set(0, 1, 0);
           playerCollider.radius = 0.35;
-          camera.position.copy(playerCollider.end);
-          camera.rotation.set(0, 0, 0);
+          avatar.position.copy(playerCollider.end);
+          avatar.rotation.set(0, 0, 0);
         }
       }
       let currentIntersect = null;
+
+      function CalculateIdealOffset() {
+        const idealOffset = new THREE.Vector3(0, 1.5, -3);
+        idealOffset.applyQuaternion(avatar.quaternion);
+        idealOffset.add(avatar.position);
+        return idealOffset;
+      }
+      function CalculateIdealLookat() {
+        const idealLookat = new THREE.Vector3(0, 0, 5);
+        idealLookat.applyQuaternion(avatar.quaternion);
+        idealLookat.add(avatar.position);
+        return idealLookat;
+      }
 
       function animate() {
         const deltaTime = Math.min(0.05, clock.getDelta()) / STEPS_PER_FRAME;
@@ -268,6 +301,16 @@ export default {
           updatePlayer(deltaTime);
 
           teleportPlayerIfOob();
+          const currentPosition = new THREE.Vector3();
+          const currentLookat = new THREE.Vector3();
+          const idealOffset = CalculateIdealOffset();
+          const idealLookat = CalculateIdealLookat();
+          const t = 1.0 - Math.pow(0.001, clock.getElapsedTime());
+          currentPosition.lerp(idealOffset, t);
+          currentLookat.lerp(idealLookat, t);
+
+          camera.position.copy(currentPosition);
+          camera.lookAt(currentLookat);
         }
         mouse.x = (window.innerWidth / 2 / window.innerWidth) * 2 - 1;
         mouse.y = -(window.innerHeight / 2 / window.innerHeight) * 2 + 1;
