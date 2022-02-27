@@ -222,26 +222,29 @@ export default {
         };
         var canvas = document.getElementById("canvas");
         canvas.addEventListener("touchmove", (event) => {
-          console.log("event.target :>> ", event.targetTouches);
+          console.log(
+            "event.movementX :>> ",
+            event.targetTouches[0].target.movementX
+          );
           let isCavanMove = false;
           for (let index = 0; index < event.targetTouches.length; index++) {
             const element = event.targetTouches[index];
             if (element.target.nodeName == "CANVAS") {
-              isCavanMove = true;
+              isCavanMove = element.target;
             }
           }
           if (isCavanMove || event.targetTouches.length === 2) {
             const touch = event.touches[0];
             if (previousTouch) {
-              event.movementX = touch.pageX - previousTouch.pageX;
-              event.movementY = touch.pageY - previousTouch.pageY;
+              isCavanMove.movementX = touch.pageX - previousTouch.pageX;
+              isCavanMove.movementY = touch.pageY - previousTouch.pageY;
 
-              camera.rotation.y -= event.movementX / 500;
+              camera.rotation.y -= isCavanMove.movementX / 500;
               if (
-                camera.rotation.x - event.movementY / 500 > -1.5 &&
-                camera.rotation.x - event.movementY / 500 < 1.5
+                camera.rotation.x - isCavanMove.movementY / 500 > -1.5 &&
+                camera.rotation.x - isCavanMove.movementY / 500 < 1.5
               )
-                camera.rotation.x -= event.movementY / 500;
+                camera.rotation.x -= isCavanMove.movementY / 500;
             }
             previousTouch = touch;
           }
