@@ -232,7 +232,9 @@ export default {
           }
           if (isCavanMove || event.targetTouches.length === 2) {
             const touch = event.touches[0];
+            console.log("previousTouch 1 :>> ", previousTouch);
             if (previousTouch) {
+              console.log("previousTouch 2 :>> ", previousTouch);
               isCavanMove.movementX = touch.pageX - previousTouch.pageX;
               isCavanMove.movementY = touch.pageY - previousTouch.pageY;
 
