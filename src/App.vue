@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="fullscreen-canvas" ref="container"></div>
+    <div class="fullscreen-canvas" id="target1" ref="container"></div>
     <div class="balance">{{ balance }} Ubxs</div>
     <div class="house-info" v-if="show">
       <div class="header">
@@ -187,12 +187,12 @@ export default {
         if (deviceType() === "desktop") {
           document.body.requestPointerLock();
         }
-        mouseTime = performance.now();
+        // mouseTime = performance.now();
       });
 
-      document.addEventListener("mouseup", () => {
-        if (document.pointerLockElement !== null) throwBall();
-      });
+      // document.addEventListener("mouseup", () => {
+      //   if (document.pointerLockElement !== null) throwBall();
+      // });
 
       document.body.addEventListener("mousemove", (event) => {
         console.log("camera.rotation.y :>> ", camera.rotation.x);
@@ -209,31 +209,24 @@ export default {
       let previousTouch;
 
       if (deviceType !== "desktop") {
-        document.body.addEventListener("touchmove", (event) => {
-          console.log("event.target :>> ", event.targetTouches);
-          let isCavanMove = false;
-          for (let index = 0; index < event.targetTouches.length; index++) {
-            const element = event.targetTouches[index];
-            if (element.target.nodeName == "CANVAS") {
-              isCavanMove = true;
-            }
-          }
-          if (isCavanMove || event.targetTouches.length === 2) {
-            const touch = event.touches[0];
-            if (previousTouch) {
-              event.movementX = touch.pageX - previousTouch.pageX;
-              event.movementY = touch.pageY - previousTouch.pageY;
+        const moveTouch = (event) => {
+          const touch = event.touches[0];
+          if (previousTouch) {
+            event.movementX = touch.pageX - previousTouch.pageX;
+            event.movementY = touch.pageY - previousTouch.pageY;
 
-              camera.rotation.y -= event.movementX / 500;
-              if (
-                camera.rotation.x - event.movementY / 500 > -1.5 &&
-                camera.rotation.x - event.movementY / 500 < 1.5
-              )
-                camera.rotation.x -= event.movementY / 500;
-            }
-            previousTouch = touch;
+            camera.rotation.y -= event.movementX / 500;
+            if (
+              camera.rotation.x - event.movementY / 500 > -1.5 &&
+              camera.rotation.x - event.movementY / 500 < 1.5
+            )
+              camera.rotation.x -= event.movementY / 500;
           }
-        });
+          previousTouch = touch;
+        };
+        var el = document.getElementById("target1");
+        el.ontouchmove = moveTouch;
+
         document.body.addEventListener("touchend", (e) => {
           previousTouch = null;
         });
