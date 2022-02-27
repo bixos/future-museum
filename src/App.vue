@@ -219,10 +219,9 @@ export default {
             }
           }
           if (isCavanMove || event.touches.length === 2) {
-            const touch = event.touches[0];
             if (previousTouch) {
-              isCavanMove.movementX = touch.pageX - previousTouch.pageX;
-              isCavanMove.movementY = touch.pageY - previousTouch.pageY;
+              isCavanMove.movementX = isCavanMove.pageX - previousTouch.pageX;
+              isCavanMove.movementY = isCavanMove.pageY - previousTouch.pageY;
               console.log("isCavanMove.movementX :>> ", isCavanMove.movementX);
 
               camera.rotation.y -= isCavanMove.movementX / 500;
