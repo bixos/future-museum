@@ -227,7 +227,7 @@ export default {
           for (let index = 0; index < event.targetTouches.length; index++) {
             const element = event.targetTouches[index];
             if (element.target.nodeName == "CANVAS") {
-              isCavanMove = element.target;
+              isCavanMove = element;
             }
           }
           if (isCavanMove || event.targetTouches.length === 2) {
