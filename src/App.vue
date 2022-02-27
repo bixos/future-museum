@@ -208,17 +208,6 @@ export default {
       let previousTouch;
 
       if (deviceType !== "desktop") {
-        let currentTouches = new Array();
-        const findCurrentTouchIndex = (id) => {
-          for (let i = 0; i < currentTouches.length; i++) {
-            if (currentTouches[i].id === id) {
-              return i;
-            }
-          }
-
-          // Touch not found! Return -1.
-          return -1;
-        };
         var canvas = document.getElementById("canvas");
         canvas.addEventListener("touchmove", (event) => {
           console.log("event :>> ", event);
@@ -231,10 +220,10 @@ export default {
           }
           if (isCavanMove || event.touches.length === 2) {
             const touch = event.touches[0];
-            console.log("isCavanMove.movementX :>> ", isCavanMove.movementX);
             if (previousTouch) {
               isCavanMove.movementX = touch.pageX - previousTouch.pageX;
               isCavanMove.movementY = touch.pageY - previousTouch.pageY;
+              console.log("isCavanMove.movementX :>> ", isCavanMove.movementX);
 
               camera.rotation.y -= isCavanMove.movementX / 500;
               if (
