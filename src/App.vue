@@ -195,9 +195,15 @@ export default {
       });
 
       document.body.addEventListener("mousemove", (event) => {
+        console.log("camera.rotation.y :>> ", camera.rotation.x);
         if (document.pointerLockElement === document.body) {
           camera.rotation.y -= event.movementX / 500;
-          camera.rotation.x -= event.movementY / 500;
+
+          if (
+            camera.rotation.x - event.movementY / 500 > -1.5 &&
+            camera.rotation.x - event.movementY / 500 < 1.5
+          )
+            camera.rotation.x -= event.movementY / 500;
         }
       });
       let previousTouch;
@@ -211,7 +217,11 @@ export default {
               event.movementY = touch.pageY - previousTouch.pageY;
 
               camera.rotation.y -= event.movementX / 500;
-              camera.rotation.x -= event.movementY / 500;
+              if (
+                camera.rotation.x - event.movementY / 500 > -1.5 &&
+                camera.rotation.x - event.movementY / 500 < 1.5
+              )
+                camera.rotation.x -= event.movementY / 500;
             }
             previousTouch = touch;
           }
@@ -412,25 +422,25 @@ export default {
         speedAngle = { up: 1.5, down: 4.5, left: 3, right: 0 };
         manager.on("move", function (evt, data) {
           keyStates = {};
-          keyStates[angles[data.direction.x]] = true;
-          keyStates[angles[data.direction.y]] = true;
-          const radian = data.angle.radian;
-          if (data.direction.x === "right" && data.direction.y === "down") {
-            speedAngle[data.direction.x] = Math.abs(
-              anglesRadian[data.direction.y] - radian
-            );
-            speedAngle[data.direction.y] =
-              Math.abs(anglesRadian[data.direction.x] - radian) - 4.5;
-          } else {
-            speedAngle[data.direction.x] = Math.abs(
-              anglesRadian[data.direction.y] - radian
-            );
-            speedAngle[data.direction.y] = Math.abs(
-              anglesRadian[data.direction.x] - radian
-            );
+          if (data.direction && data.direction.x && data.direction.y) {
+            keyStates[angles[data.direction.x]] = true;
+            keyStates[angles[data.direction.y]] = true;
+            const radian = data.angle.radian;
+            if (data.direction.x === "right" && data.direction.y === "down") {
+              speedAngle[data.direction.x] = Math.abs(
+                anglesRadian[data.direction.y] - radian
+              );
+              speedAngle[data.direction.y] =
+                Math.abs(anglesRadian[data.direction.x] - radian) - 4.5;
+            } else {
+              speedAngle[data.direction.x] = Math.abs(
+                anglesRadian[data.direction.y] - radian
+              );
+              speedAngle[data.direction.y] = Math.abs(
+                anglesRadian[data.direction.x] - radian
+              );
+            }
           }
-          console.log("radian :>> ", radian);
-          console.log("speedAngle :>> ", speedAngle);
         });
         manager.on("end", function (evt, data) {
           keyStates = {};
