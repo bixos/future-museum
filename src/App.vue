@@ -222,10 +222,7 @@ export default {
         };
         var canvas = document.getElementById("canvas");
         canvas.addEventListener("touchmove", (event) => {
-          console.log(
-            "event.movementX :>> ",
-            event.targetTouches[0].target.movementX
-          );
+          console.log("event :>> ", event);
           let isCavanMove = false;
           for (let index = 0; index < event.targetTouches.length; index++) {
             const element = event.targetTouches[index];
