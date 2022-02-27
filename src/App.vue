@@ -9,6 +9,7 @@
       </div>
       <button class="buy-button" @click="buy()">Buy</button>
     </div>
+    <div class="joystick-container" ref="joystick"></div>
   </div>
 </template>
 
@@ -20,13 +21,28 @@ import { Capsule } from "three/examples/jsm/math/Capsule.js";
 import { Octree } from "three/examples/jsm/math/Octree.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
+import nipplejs from "nipplejs";
 
 export default {
   name: "App",
   setup() {
     const container = ref({});
+    const joystick = ref({});
     const show = ref(false);
     const balance = ref(7000000);
+    const angles = {
+      up: "KeyW",
+      down: "KeyS",
+      right: "KeyD",
+      left: "KeyA",
+    };
+    const anglesRadian = {
+      right: 0,
+      up: 1.5,
+      left: 3,
+      down: 4.5,
+    };
+
     const closeModel = () => {
       show.value = false;
       document.body.requestPointerLock();
@@ -36,7 +52,32 @@ export default {
       show.value = false;
       document.body.requestPointerLock();
     };
+    const deviceType = () => {
+      const ua = navigator.userAgent;
+      if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) {
+        return "tablet";
+      } else if (
+        /Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(
+          ua
+        )
+      ) {
+        return "mobile";
+      }
+      return "desktop";
+    };
     onMounted(() => {
+      if (deviceType() !== "desktop") {
+        var options = {
+          zone: joystick.value,
+          mode: "static",
+          position: {
+            left: "50%",
+            top: "50%",
+          },
+        };
+        var manager = nipplejs.create(options);
+      }
+
       const clock = new THREE.Clock();
 
       const scene = new THREE.Scene();
@@ -128,7 +169,7 @@ export default {
       let playerOnFloor = false;
       let mouseTime = 0;
 
-      const keyStates = {};
+      let keyStates = {};
 
       const vector1 = new THREE.Vector3();
       const vector2 = new THREE.Vector3();
@@ -143,8 +184,9 @@ export default {
       });
 
       container.value.addEventListener("mousedown", () => {
-        document.body.requestPointerLock();
-
+        if (deviceType() === "desktop") {
+          document.body.requestPointerLock();
+        }
         mouseTime = performance.now();
       });
 
@@ -158,7 +200,26 @@ export default {
           camera.rotation.x -= event.movementY / 500;
         }
       });
+      let previousTouch;
 
+      if (deviceType !== "desktop") {
+        document.body.addEventListener("touchmove", (event) => {
+          if (event.target.nodeName == "CANVAS") {
+            const touch = event.touches[0];
+            if (previousTouch) {
+              event.movementX = touch.pageX - previousTouch.pageX;
+              event.movementY = touch.pageY - previousTouch.pageY;
+
+              camera.rotation.y -= event.movementX / 500;
+              camera.rotation.x -= event.movementY / 500;
+            }
+            previousTouch = touch;
+          }
+        });
+        document.body.addEventListener("touchend", (e) => {
+          previousTouch = null;
+        });
+      }
       window.addEventListener("resize", onWindowResize);
 
       function onWindowResize() {
@@ -346,24 +407,62 @@ export default {
         return playerDirection;
       }
 
+      let speedAngle = { up: 1, down: 1, left: 1, right: 1 };
+      if (deviceType() !== "desktop") {
+        speedAngle = { up: 1.5, down: 4.5, left: 3, right: 0 };
+        manager.on("move", function (evt, data) {
+          keyStates = {};
+          keyStates[angles[data.direction.x]] = true;
+          keyStates[angles[data.direction.y]] = true;
+          const radian = data.angle.radian;
+          if (data.direction.x === "right" && data.direction.y === "down") {
+            speedAngle[data.direction.x] = Math.abs(
+              anglesRadian[data.direction.y] - radian
+            );
+            speedAngle[data.direction.y] =
+              Math.abs(anglesRadian[data.direction.x] - radian) - 4.5;
+          } else {
+            speedAngle[data.direction.x] = Math.abs(
+              anglesRadian[data.direction.y] - radian
+            );
+            speedAngle[data.direction.y] = Math.abs(
+              anglesRadian[data.direction.x] - radian
+            );
+          }
+          console.log("radian :>> ", radian);
+          console.log("speedAngle :>> ", speedAngle);
+        });
+        manager.on("end", function (evt, data) {
+          keyStates = {};
+          speedAngle = { up: 1.5, down: 1.5, left: 1.5, right: 1.5 };
+        });
+      }
       function controls(deltaTime) {
         // gives a bit of air control
         const speedDelta = deltaTime * (playerOnFloor ? 25 : 8);
 
         if (keyStates["KeyW"]) {
-          playerVelocity.add(getForwardVector().multiplyScalar(speedDelta));
+          playerVelocity.add(
+            getForwardVector().multiplyScalar(speedDelta * speedAngle.up)
+          );
         }
 
         if (keyStates["KeyS"]) {
-          playerVelocity.add(getForwardVector().multiplyScalar(-speedDelta));
+          playerVelocity.add(
+            getForwardVector().multiplyScalar(-speedDelta * speedAngle.down)
+          );
         }
 
         if (keyStates["KeyA"]) {
-          playerVelocity.add(getSideVector().multiplyScalar(-speedDelta));
+          playerVelocity.add(
+            getSideVector().multiplyScalar(-speedDelta * speedAngle.left)
+          );
         }
 
         if (keyStates["KeyD"]) {
-          playerVelocity.add(getSideVector().multiplyScalar(speedDelta));
+          playerVelocity.add(
+            getSideVector().multiplyScalar(speedDelta * speedAngle.right)
+          );
         }
 
         if (playerOnFloor) {
@@ -375,7 +474,7 @@ export default {
 
       const loader = new GLTFLoader().setPath("./models/");
 
-      loader.load("palmmap.glb", (gltf) => {
+      loader.load("VillageUnity.glb", (gltf) => {
         scene.add(gltf.scene);
 
         worldOctree.fromGraphNode(gltf.scene);
@@ -427,7 +526,7 @@ export default {
         requestAnimationFrame(animate);
       }
     });
-    return { container, show, closeModel, balance, buy };
+    return { container, joystick, show, closeModel, balance, buy };
   },
 };
 </script>
@@ -483,5 +582,15 @@ body {
   height: 50px;
   border-radius: 10px;
   font-size: 16px;
+}
+.joystick-container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  top: 80%;
+  width: 100px;
+  height: 100px;
 }
 </style>
