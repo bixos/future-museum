@@ -195,7 +195,6 @@ export default {
       });
 
       document.body.addEventListener("mousemove", (event) => {
-        console.log("camera.rotation.y :>> ", camera.rotation.x);
         if (document.pointerLockElement === document.body) {
           camera.rotation.y -= event.movementX / 500;
 
@@ -224,17 +223,16 @@ export default {
         canvas.addEventListener("touchmove", (event) => {
           console.log("event :>> ", event);
           let isCavanMove = false;
-          for (let index = 0; index < event.targetTouches.length; index++) {
-            const element = event.targetTouches[index];
+          for (let index = 0; index < event.touches.length; index++) {
+            const element = event.touches[index];
             if (element.target.nodeName == "CANVAS") {
               isCavanMove = element;
             }
           }
-          if (isCavanMove || event.targetTouches.length === 2) {
+          if (isCavanMove || event.touches.length === 2) {
             const touch = event.touches[0];
-            console.log("previousTouch 1 :>> ", previousTouch);
+            console.log("isCavanMove.movementX :>> ", isCavanMove.movementX);
             if (previousTouch) {
-              console.log("previousTouch 2 :>> ", previousTouch);
               isCavanMove.movementX = touch.pageX - previousTouch.pageX;
               isCavanMove.movementY = touch.pageY - previousTouch.pageY;
 
