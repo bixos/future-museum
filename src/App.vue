@@ -245,7 +245,7 @@ export default {
               )
                 camera.rotation.x -= isCavanMove.movementY / 500;
             }
-            previousTouch = touch;
+            previousTouch = isCavanMove;
           }
         });
         document.body.addEventListener("touchend", (e) => {
