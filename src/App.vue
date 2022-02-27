@@ -210,7 +210,15 @@ export default {
 
       if (deviceType !== "desktop") {
         document.body.addEventListener("touchmove", (event) => {
-          if (event.target.nodeName == "CANVAS") {
+          console.log("event.target :>> ", event.targetTouches);
+          let isCavanMove = false;
+          for (let index = 0; index < event.targetTouches.length; index++) {
+            const element = event.targetTouches[index];
+            if (element.target.nodeName == "CANVAS") {
+              isCavanMove = true;
+            }
+          }
+          if (isCavanMove) {
             const touch = event.touches[0];
             if (previousTouch) {
               event.movementX = touch.pageX - previousTouch.pageX;
