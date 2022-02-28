@@ -5737,6 +5737,11 @@ thread-loader@^3.0.0:
     neo-async "^2.6.2"
     schema-utils "^3.0.0"
 
+three-mesh-bvh@^0.5.5:
+  version "0.5.5"
+  resolved "https://registry.yarnpkg.com/three-mesh-bvh/-/three-mesh-bvh-0.5.5.tgz#2d7df2607ac8ea9ef0413eb47eb168d618fa54ab"
+  integrity sha512-WPsEXLfUh+8n2CcWaDnBm4q3c6PbISPbXOBNYt8VLEOTATXP8UqAfEyEBmQU8B9h5FJSSccdXXlHiexO3hZezg==
+
 three@^0.138.0:
   version "0.138.0"
   resolved "https://registry.yarnpkg.com/three/-/three-0.138.0.tgz#cd0cbeb621a5826c65e49e06705d0bb9f6c13ca6"
