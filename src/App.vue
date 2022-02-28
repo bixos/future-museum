@@ -8,33 +8,59 @@ import * as THREE from "three";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { MeshBVH, MeshBVHVisualizer } from "three-mesh-bvh";
+import {
+  acceleratedRaycast,
+  computeBoundsTree,
+  disposeBoundsTree,
+  CENTER,
+  SAH,
+  AVERAGE,
+  MeshBVH,
+} from "three-mesh-bvh";
 import Stats from "stats.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+
 import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
 import nipplejs from "nipplejs";
 
 export default {
   name: "App",
   setup() {
+    /**
+     * rayVariables
+     */
+    THREE.Mesh.prototype.raycast = acceleratedRaycast;
+    THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
+    THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+
+    const rayCasterObjects = [];
+    // Create ray casters in the scene
+    const raycaster = new THREE.Raycaster();
+
     const container = ref({});
     const joystick = ref({});
 
     const params = {
-      firstPerson: false,
+      firstPerson: true,
 
       displayCollider: false,
       displayBVH: false,
-      visualizeDepth: 10,
+      visualizeDepth: 50,
       gravity: -30,
       playerSpeed: 10,
       physicsSteps: 5,
 
       reset: reset,
+      // Ray Params
+      raycasters: {
+        count: 150,
+      },
     };
 
     let renderer, camera, scene, clock, gui, stats;
-    let environment, collider, visualizer, player, controls;
+    let environment, collider, player, controls;
+
     let playerIsOnGround = false;
     let fwdPressed = false,
       bkdPressed = false,
@@ -112,9 +138,6 @@ export default {
               );
             }
           }
-
-          console.log("keyStates :>> ", keyStates);
-          console.log("speedAngle :>> ", speedAngle);
         });
         manager.on("end", function (evt, data) {
           keyStates = {};
@@ -124,10 +147,29 @@ export default {
     });
 
     init();
+
     render();
 
+    function addRaycaster() {
+      // reusable vectors
+      const origVec = new THREE.Vector3();
+      const dirVec = new THREE.Vector3();
+      rayCasterObjects.push({
+        update: () => {
+          player.updateMatrixWorld();
+          origVec.setFromMatrixPosition(player.matrixWorld);
+          dirVec.copy(origVec).multiplyScalar(-1).normalize();
+
+          raycaster.set(origVec, dirVec);
+          raycaster.firstHitOnly = true;
+          // const res = raycaster.intersectObject(scene.children[3], true);
+          // console.log("res :>> ", res);
+        },
+      });
+    }
+
     function init() {
-      const bgColor = 0x263238 / 2;
+      const bgColor = 0x87cefa;
 
       // renderer setup
       renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -141,7 +183,7 @@ export default {
 
       // scene setup
       scene = new THREE.Scene();
-      scene.fog = new THREE.Fog(bgColor, 20, 70);
+      // scene.fog = new THREE.Fog(bgColor, 20, 70);
 
       // lights
       const light = new THREE.DirectionalLight(0xffffff, 1);
@@ -166,8 +208,8 @@ export default {
         0.1,
         50
       );
-      camera.position.set(10, 10, -10);
-      camera.far = 100;
+
+      camera.far = 500;
       camera.updateProjectionMatrix();
       window.camera = camera;
 
@@ -178,8 +220,6 @@ export default {
       // stats setup
       stats = new Stats();
       document.body.appendChild(stats.dom);
-
-      loadColliderEnvironment();
 
       // character
       player = new THREE.Mesh(
@@ -197,11 +237,9 @@ export default {
       player.castShadow = true;
       player.receiveShadow = true;
       player.material.shadowSide = 2;
-      // player.position.x = 1;
-      // player.position.y = -3;
-      // player.position.z = 3;
       scene.add(player);
-      reset();
+
+      loadColliderEnvironment();
 
       // dat.gui
       gui = new GUI();
@@ -214,15 +252,6 @@ export default {
             .add(controls.target);
         }
       });
-
-      const visFolder = gui.addFolder("Visualization");
-      visFolder.add(params, "displayCollider");
-      visFolder.add(params, "displayBVH");
-      visFolder.add(params, "visualizeDepth", 1, 20, 1).onChange((v) => {
-        visualizer.depth = v;
-        visualizer.update();
-      });
-      visFolder.open();
 
       const physicsFolder = gui.addFolder("Player");
       physicsFolder.add(params, "physicsSteps", 0, 30, 1);
@@ -288,61 +317,19 @@ export default {
     }
 
     function loadColliderEnvironment() {
-      new GLTFLoader().load("/models/palmmap.glb", (res) => {
+      const dracoLoader = new DRACOLoader();
+      dracoLoader.setDecoderPath("/draco/");
+
+      const gltfLoader = new GLTFLoader();
+      gltfLoader.setDRACOLoader(dracoLoader);
+      gltfLoader.load("/models/palmmap.glb", (res) => {
         const gltfScene = res.scene;
-        console.log("gltfScene :>> ", gltfScene);
 
-        gltfScene.scale.setScalar(10);
-
-        const box = new THREE.Box3();
-        box.setFromObject(gltfScene);
-        box.getCenter(gltfScene.position).negate();
-        gltfScene.updateMatrixWorld(true);
-
-        // visual geometry setup
-        const toMerge = {};
-        gltfScene.traverse((c) => {
-          if (c.isMesh) {
-            const hex = c.material.color.getHex();
-            toMerge[hex] = toMerge[hex] || [];
-            toMerge[hex].push(c);
-          }
-        });
-        environment = new THREE.Group();
-        for (const hex in toMerge) {
-          const arr = toMerge[hex];
-          const visualGeometries = [];
-          arr.forEach((mesh) => {
-            if (mesh.material.emissive.r !== 0) {
-              environment.attach(mesh);
-            } else {
-              const geom = mesh.geometry.clone();
-              geom.applyMatrix4(mesh.matrixWorld);
-              visualGeometries.push(geom);
-            }
-          });
-          if (visualGeometries.length) {
-            const newGeom =
-              BufferGeometryUtils.mergeBufferGeometries(visualGeometries);
-            const newMesh = new THREE.Mesh(
-              newGeom,
-              new THREE.MeshStandardMaterial({
-                color: parseInt(hex),
-                shadowSide: 2,
-              })
-            );
-            newMesh.castShadow = true;
-            newMesh.receiveShadow = true;
-            newMesh.material.shadowSide = 2;
-
-            environment.add(newMesh);
-          }
-        }
-
-        // collect all geometries to merge
+        gltfScene.scale.setScalar(20);
+        environment = gltfScene;
         const geometries = [];
-        environment.updateMatrixWorld(true);
-        environment.traverse((c) => {
+        gltfScene.updateMatrixWorld(true);
+        gltfScene.traverse((c) => {
           if (c.geometry) {
             const cloned = c.geometry.clone();
             cloned.applyMatrix4(c.matrixWorld);
@@ -366,26 +353,33 @@ export default {
         });
 
         collider = new THREE.Mesh(mergedGeometry);
-        collider.material.wireframe = true;
-        collider.material.opacity = 0.5;
-        collider.material.transparent = true;
 
-        console.log("collider :>> ", collider);
+        scene.add(gltfScene);
+        while (rayCasterObjects.length < params.raycasters.count) {
+          addRaycaster();
+        }
 
-        visualizer = new MeshBVHVisualizer(collider, params.visualizeDepth);
-        scene.add(visualizer);
-        scene.add(collider);
-        scene.add(environment);
-        // scene.add(gltfScene);
+        player.geometry.computeBoundsTree({
+          maxLeafTris: 5,
+          strategy: parseFloat(CENTER),
+        });
+        player.geometry.boundsTree.splitStrategy = CENTER;
+        // gltfScene.traverse((c) => {
+        //   // if
+        //   // console.log("c.name :>> ", c.name);
+        // });
+        reset();
       });
     }
 
     function reset() {
       playerVelocity.set(0, 0, 0);
-      player.position.set(-1, 20, 1);
+
+      player.position.set(0, 100, 120);
       camera.position.sub(controls.target);
       controls.target.copy(player.position);
       camera.position.add(player.position);
+      console.log("camera.rotation :>> ", camera.rotation);
       controls.update();
     }
 
@@ -561,9 +555,6 @@ export default {
       }
 
       if (collider) {
-        collider.visible = params.displayCollider;
-        visualizer.visible = params.displayBVH;
-
         const physicsSteps = params.physicsSteps;
 
         for (let i = 0; i < physicsSteps; i++) {
@@ -573,9 +564,9 @@ export default {
 
       // TODO: limit the camera movement based on the collider
       // raycast in direction of camera and move it if it's further than the closest point
+      // rayCasterObjects.forEach((f) => f.update());
 
       controls.update();
-
       renderer.render(scene, camera);
     }
     return { container, joystick };
