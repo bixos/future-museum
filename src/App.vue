@@ -1,10 +1,16 @@
 <template>
-  <div class="joystick-container" ref="joystick"></div>
+  <div>
+    <div class="joystick-container" ref="joystick"></div>
+    <div v-if="loading" class="overlay">
+      <div class="loading-bar" ref="loadingBarElement"></div>
+    </div>
+  </div>
 </template>
 
 <script>
 import { ref, onMounted } from "vue";
 import * as THREE from "three";
+import { gsap } from "gsap";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
@@ -34,12 +40,10 @@ export default {
     THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
     THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 
-    const rayCasterObjects = [];
-    // Create ray casters in the scene
-    const raycaster = new THREE.Raycaster();
-
     const container = ref({});
     const joystick = ref({});
+    const loadingBarElement = ref({});
+    const loading = ref(true);
 
     const params = {
       firstPerson: true,
@@ -73,6 +77,36 @@ export default {
     let tempBox = new THREE.Box3();
     let tempMat = new THREE.Matrix4();
     let tempSegment = new THREE.Line3();
+
+    const loadingManager = new THREE.LoadingManager(
+      () => {
+        gsap
+          .timeline({
+            paused: false,
+            defaults: { duration: 3 },
+          })
+          .to(".overlay", { opacity: 0 })
+          .then(() => {
+            loading.value = false;
+          });
+        loadingBarElement.value.classList.add("ended");
+        loadingBarElement.value.style.transform = "";
+      },
+      (itemUrl, itemsLoaded, itemsTotal) => {
+        const progressRatio = itemsLoaded / itemsTotal;
+        loadingBarElement.value.style.transform = `scaleX(${progressRatio})`;
+        console.log(itemsTotal, "/", itemsLoaded);
+      },
+      () => {
+        console.log("error");
+      }
+    );
+
+    const dracoLoader = new DRACOLoader(loadingManager);
+    dracoLoader.setDecoderPath("/draco/");
+
+    const gltfLoader = new GLTFLoader(loadingManager);
+    gltfLoader.setDRACOLoader(dracoLoader);
 
     const deviceType = () => {
       const ua = navigator.userAgent;
@@ -150,34 +184,19 @@ export default {
 
     render();
 
-    function addRaycaster() {
-      // reusable vectors
-      const origVec = new THREE.Vector3();
-      const dirVec = new THREE.Vector3();
-      rayCasterObjects.push({
-        update: () => {
-          player.updateMatrixWorld();
-          origVec.setFromMatrixPosition(player.matrixWorld);
-          dirVec.copy(origVec).multiplyScalar(-1).normalize();
-
-          raycaster.set(origVec, dirVec);
-          raycaster.firstHitOnly = true;
-          // const res = raycaster.intersectObject(scene.children[3], true);
-          // console.log("res :>> ", res);
-        },
-      });
-    }
+    loadColliderEnvironment();
 
     function init() {
       const bgColor = 0x87cefa;
 
       // renderer setup
-      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer = new THREE.WebGLRenderer({
+        antialias: true,
+        powerPreference: "high-performance",
+      });
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
       renderer.setClearColor(bgColor, 1);
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.outputEncoding = THREE.sRGBEncoding;
       document.body.appendChild(renderer.domElement);
 
@@ -188,15 +207,6 @@ export default {
       // lights
       const light = new THREE.DirectionalLight(0xffffff, 1);
       light.position.set(1, 1.5, 1).multiplyScalar(50);
-      light.shadow.mapSize.setScalar(2048);
-      light.shadow.bias = -1e-4;
-      light.shadow.normalBias = 0.05;
-      light.castShadow = true;
-
-      const shadowCam = light.shadow.camera;
-      shadowCam.bottom = shadowCam.left = -30;
-      shadowCam.top = 30;
-      shadowCam.right = 45;
 
       scene.add(light);
       scene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 0.4));
@@ -221,25 +231,113 @@ export default {
       stats = new Stats();
       document.body.appendChild(stats.dom);
 
-      // character
-      player = new THREE.Mesh(
-        new RoundedBoxGeometry(1.0, 2.0, 1.0, 10, 0.5),
-        new THREE.MeshStandardMaterial()
-      );
-      player.geometry.translate(0, -0.5, 0);
-      player.capsuleInfo = {
-        radius: 0.5,
-        segment: new THREE.Line3(
-          new THREE.Vector3(),
-          new THREE.Vector3(0, -1.0, 0.0)
-        ),
-      };
-      player.castShadow = true;
-      player.receiveShadow = true;
-      player.material.shadowSide = 2;
-      scene.add(player);
+      window.addEventListener(
+        "resize",
+        function () {
+          camera.aspect = window.innerWidth / window.innerHeight;
+          camera.updateProjectionMatrix();
 
-      loadColliderEnvironment();
+          renderer.setSize(window.innerWidth, window.innerHeight);
+        },
+        false
+      );
+    }
+
+    function loadColliderEnvironment() {
+      gltfLoader.load("/models/palmmap.glb", (res) => {
+        // character
+        player = new THREE.Mesh(
+          new RoundedBoxGeometry(1.0, 2.0, 1.0, 10, 0.5),
+          new THREE.MeshStandardMaterial()
+        );
+        player.geometry.translate(0, -0.5, 0);
+        player.capsuleInfo = {
+          radius: 0.5,
+          segment: new THREE.Line3(
+            new THREE.Vector3(),
+            new THREE.Vector3(0, -1.0, 0.0)
+          ),
+        };
+        scene.add(player);
+        player.position.set(0, 100, 120);
+
+        // map
+        const gltfScene = res.scene;
+        console.time("gltf loaded");
+        gltfScene.scale.setScalar(20);
+
+        const toMerge = {};
+        gltfScene.traverse((c) => {
+          if (c.isMesh) {
+            const hex = c.material.color.getHex();
+            toMerge[hex] = toMerge[hex] || [];
+            toMerge[hex].push(c);
+          }
+        });
+
+        environment = new THREE.Group();
+        for (const hex in toMerge) {
+          const arr = toMerge[hex];
+          const visualGeometries = [];
+          arr.forEach((mesh) => {
+            if (
+              mesh.material.emissive.r !== 0 ||
+              !mesh.geometry.attributes.uv
+            ) {
+              environment.attach(mesh);
+            } else {
+              const geom = mesh.geometry.clone();
+              geom.applyMatrix4(mesh.matrixWorld);
+              visualGeometries.push(geom);
+            }
+          });
+
+          if (visualGeometries.length) {
+            const newGeom =
+              BufferGeometryUtils.mergeBufferGeometries(visualGeometries);
+            const newMesh = new THREE.Mesh(
+              newGeom,
+              new THREE.MeshStandardMaterial({
+                color: parseInt(hex),
+                shadowSide: 2,
+              })
+            );
+            newMesh.castShadow = true;
+            newMesh.receiveShadow = true;
+            newMesh.material.shadowSide = 2;
+
+            environment.add(newMesh);
+          }
+        }
+        const geometries = [];
+        gltfScene.updateMatrixWorld(true);
+        gltfScene.traverse((c) => {
+          if (c.geometry) {
+            const cloned = c.geometry.clone();
+            cloned.applyMatrix4(c.matrixWorld);
+            for (const key in cloned.attributes) {
+              if (key !== "position") {
+                cloned.deleteAttribute(key);
+              }
+            }
+
+            geometries.push(cloned);
+          }
+        });
+
+        // create the merged geometry
+        const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(
+          geometries,
+          false
+        );
+        mergedGeometry.boundsTree = new MeshBVH(mergedGeometry, {
+          lazyGeneration: true,
+        });
+
+        collider = new THREE.Mesh(mergedGeometry);
+
+        scene.add(gltfScene);
+      });
 
       // dat.gui
       gui = new GUI();
@@ -263,17 +361,6 @@ export default {
 
       gui.add(params, "reset");
       gui.open();
-
-      window.addEventListener(
-        "resize",
-        function () {
-          camera.aspect = window.innerWidth / window.innerHeight;
-          camera.updateProjectionMatrix();
-
-          renderer.setSize(window.innerWidth, window.innerHeight);
-        },
-        false
-      );
 
       window.addEventListener("keydown", function (e) {
         switch (e.code) {
@@ -316,70 +403,12 @@ export default {
       });
     }
 
-    function loadColliderEnvironment() {
-      const dracoLoader = new DRACOLoader();
-      dracoLoader.setDecoderPath("/draco/");
-
-      const gltfLoader = new GLTFLoader();
-      gltfLoader.setDRACOLoader(dracoLoader);
-      gltfLoader.load("/models/palmmap.glb", (res) => {
-        const gltfScene = res.scene;
-
-        gltfScene.scale.setScalar(20);
-        environment = gltfScene;
-        const geometries = [];
-        gltfScene.updateMatrixWorld(true);
-        gltfScene.traverse((c) => {
-          if (c.geometry) {
-            const cloned = c.geometry.clone();
-            cloned.applyMatrix4(c.matrixWorld);
-            for (const key in cloned.attributes) {
-              if (key !== "position") {
-                cloned.deleteAttribute(key);
-              }
-            }
-
-            geometries.push(cloned);
-          }
-        });
-
-        // create the merged geometry
-        const mergedGeometry = BufferGeometryUtils.mergeBufferGeometries(
-          geometries,
-          false
-        );
-        mergedGeometry.boundsTree = new MeshBVH(mergedGeometry, {
-          lazyGeneration: false,
-        });
-
-        collider = new THREE.Mesh(mergedGeometry);
-
-        scene.add(gltfScene);
-        while (rayCasterObjects.length < params.raycasters.count) {
-          addRaycaster();
-        }
-
-        player.geometry.computeBoundsTree({
-          maxLeafTris: 5,
-          strategy: parseFloat(CENTER),
-        });
-        player.geometry.boundsTree.splitStrategy = CENTER;
-        // gltfScene.traverse((c) => {
-        //   // if
-        //   // console.log("c.name :>> ", c.name);
-        // });
-        reset();
-      });
-    }
-
     function reset() {
       playerVelocity.set(0, 0, 0);
-
       player.position.set(0, 100, 120);
       camera.position.sub(controls.target);
       controls.target.copy(player.position);
       camera.position.add(player.position);
-      console.log("camera.rotation :>> ", camera.rotation);
       controls.update();
     }
 
@@ -529,6 +558,7 @@ export default {
       }
 
       // adjust the camera
+
       camera.position.sub(controls.target);
       controls.target.copy(player.position);
       camera.position.add(player.position);
@@ -569,7 +599,7 @@ export default {
       controls.update();
       renderer.render(scene, camera);
     }
-    return { container, joystick };
+    return { container, joystick, loading, loadingBarElement };
   },
 };
 </script>
@@ -596,5 +626,29 @@ canvas {
   top: 80%;
   width: 100px;
   height: 100px;
+}
+.overlay {
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  opacity: 1;
+  background: black;
+  top: 0;
+  left: 0;
+}
+.loading-bar {
+  position: absolute;
+  top: 50%;
+  width: 100%;
+  height: 2px;
+  background: #ffffff;
+  transform: scaleX(0);
+  transform-origin: top left;
+  transition: transform 0.5s;
+}
+.loading-bar.ended {
+  transform: scaleX(0);
+  transform-origin: 100% 0;
+  transition: transform 1.5s ease-in-out;
 }
 </style>
