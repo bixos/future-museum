@@ -4,6 +4,10 @@
     <div v-if="loading" class="overlay">
       <div class="loading-bar" ref="loadingBarElement"></div>
     </div>
+    <div v-if="contactUs" @click="contactUs = false" class="contact-us">
+      contact us
+    </div>
+    <div v-if="interactHint" class="interact-hint">Interact Hint</div>
   </div>
 </template>
 
@@ -44,6 +48,8 @@ export default {
     const joystick = ref({});
     const loadingBarElement = ref({});
     const loading = ref(true);
+    const contactUs = ref(false);
+    const interactHint = ref(false);
 
     const params = {
       firstPerson: true,
@@ -207,9 +213,9 @@ export default {
       // lights
       const light = new THREE.DirectionalLight(0xffffff, 1);
       light.position.set(1, 1.5, 1).multiplyScalar(50);
-
       scene.add(light);
-      scene.add(new THREE.HemisphereLight(0xffffff, 0x223344, 0.4));
+
+      scene.add(new THREE.HemisphereLight(0xffffff, bgColor, 1));
 
       // camera setup
       camera = new THREE.PerspectiveCamera(
@@ -219,7 +225,7 @@ export default {
         50
       );
 
-      camera.far = 500;
+      camera.far = 100;
       camera.updateProjectionMatrix();
       window.camera = camera;
 
@@ -259,11 +265,10 @@ export default {
           ),
         };
         scene.add(player);
-        player.position.set(0, 100, 120);
+        player.position.set(0, 100, -150);
 
         // map
         const gltfScene = res.scene;
-        console.time("gltf loaded");
         gltfScene.scale.setScalar(20);
 
         const toMerge = {};
@@ -399,8 +404,21 @@ export default {
           case "KeyA":
             lftPressed = false;
             break;
+          case "Enter":
+            interact();
+            break;
         }
       });
+    }
+
+    function interact() {
+      console.log("player.position.x :>> ", player.position.x);
+      console.log("player.position.z :>> ", player.position.z);
+      const x = player.position.x;
+      const z = player.position.z;
+      if (x > 7 && x < 20 && z > -194 && z < -187) {
+        contactUs.value = true;
+      }
     }
 
     function reset() {
@@ -546,7 +564,6 @@ export default {
 
       // adjust the player model
       player.position.add(deltaVector);
-
       if (!playerIsOnGround) {
         deltaVector.normalize();
         playerVelocity.addScaledVector(
@@ -591,6 +608,21 @@ export default {
           updatePlayer(delta / physicsSteps);
         }
       }
+      if (player) {
+        const x = player.position.x;
+        const z = player.position.z;
+        if (
+          x > 7 &&
+          x < 20 &&
+          z > -194 &&
+          z < -187 &&
+          contactUs.value === false
+        ) {
+          interactHint.value = true;
+        } else {
+          interactHint.value = false;
+        }
+      }
 
       // TODO: limit the camera movement based on the collider
       // raycast in direction of camera and move it if it's further than the closest point
@@ -599,7 +631,14 @@ export default {
       controls.update();
       renderer.render(scene, camera);
     }
-    return { container, joystick, loading, loadingBarElement };
+    return {
+      container,
+      joystick,
+      loading,
+      loadingBarElement,
+      contactUs,
+      interactHint,
+    };
   },
 };
 </script>
@@ -650,5 +689,29 @@ canvas {
   transform: scaleX(0);
   transform-origin: 100% 0;
   transition: transform 1.5s ease-in-out;
+}
+.contact-us {
+  width: 200px;
+  height: 200px;
+  background: grey;
+  z-index: 99999;
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  top: 50%;
+}
+.interact-hint {
+  width: 200px;
+  height: 100px;
+  background: grey;
+  z-index: 99999;
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  top: 10%;
 }
 </style>
