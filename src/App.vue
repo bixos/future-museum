@@ -2,31 +2,145 @@
   <div>
     <div class="joystick-container" ref="joystick"></div>
     <div v-if="loading" class="overlay">
+      <img
+        src="./assets/icons/Bixos-light-text.svg"
+        class="logo-home-icon"
+        alt="logo-home"
+      />
       <div class="loading-bar" ref="loadingBarElement"></div>
+      <span>LOADING</span>
+      <div style="height: 140px"></div>
     </div>
     <div
       v-if="houseDetails"
       @click="houseDetails = false"
       class="house-details"
     >
-      {{ house }}
-      <button class="buy-house-button">Buy</button>
-    </div>
-    <div v-if="interactHint" class="interact-hint">Interact Hint</div>
-    <div class="balance">{{ balance }} UBXS</div>
-    <div class="key-helper">
-      <div class="key">W</div>
-      <div class="bottom-keys">
-        <div class="key">A</div>
-        <div class="key">S</div>
-        <div class="key">D</div>
+      <div class="house-details-container">
+        <div class="house-header">
+          <img src="./assets/house.png" class="house-img" alt="house" />
+          <div style="display: flex">
+            <img
+              src="./assets/icons/Bixos-light.svg"
+              style="height: 32px; margin-right: 10px"
+              alt="ixos-light"
+            />
+
+            <span>{{ house.price.toLocaleString("es-ES") }}</span>
+          </div>
+        </div>
+        <div class="house-body">
+          <div class="house-features">
+            <div class="details-label">
+              <p>Nummber of Rooms</p>
+              <p>Building age</p>
+              <p>Number of Floors</p>
+              <p>M2</p>
+              <p>Owner</p>
+            </div>
+            <div class="details-value">
+              <p>: {{ house.rooms }}</p>
+              <p>: {{ house.age }}</p>
+              <p>: {{ house.floors }}</p>
+              <p>: {{ house.m2 }}</p>
+              <p>: {{ house.owner }}</p>
+            </div>
+          </div>
+          <div @click="buyHouse" class="buy-house-button">Buy</div>
+        </div>
       </div>
+    </div>
+    <div class="logo-home">
+      <img
+        src="./assets/icons/Bixos-light-text.svg"
+        class="logo-home-icon"
+        alt="logo-home"
+      />
+    </div>
+    <div class="balance">
+      <img src="./assets/icons/Bixos.svg" class="logo" alt="bixos-logo" />
+      <span>{{ balance.toLocaleString("es-ES") }}</span>
+    </div>
+    <div class="key-helper">
+      <div style="display: flex; flex-direction: column; align-items: center">
+        <div class="key">
+          <span>W</span>
+          <img
+            style="transform: rotate(180deg)"
+            src="./assets/icons/Arrow.svg"
+            class="arrow"
+            alt="arrow"
+          />
+        </div>
+        <div class="bottom-keys">
+          <div class="key">
+            <span>A</span>
+            <img
+              src="./assets/icons/Arrow.svg"
+              style="transform: rotate(90deg)"
+              class="arrow"
+              alt="arrow"
+            />
+          </div>
+          <div class="key">
+            <span>S</span>
+            <img src="./assets/icons/Arrow.svg" class="arrow" alt="arrow" />
+          </div>
+          <div class="key">
+            <span>D</span>
+            <img
+              src="./assets/icons/Arrow.svg"
+              style="transform: rotate(-90deg)"
+              class="arrow"
+              alt="arrow"
+            />
+          </div>
+        </div>
+        <span class="walk-hint"> Walk </span>
+      </div>
+      <div class="key key-mouse">
+        <img src="./assets/icons/Mouse.svg" class="mouse" alt="mouse" />
+
+        <span class="look-hint"> Look </span>
+      </div>
+    </div>
+    <div class="social-media">
+      <img
+        src="./assets/icons/Telegram.svg"
+        class="social-media-icon"
+        alt="telegram"
+      />
+      <img
+        src="./assets/icons/Discord.svg"
+        class="social-media-icon"
+        alt="discord"
+      />
+      <img
+        src="./assets/icons/Twitter.svg"
+        class="social-media-icon"
+        alt="twitter"
+      />
+      <img
+        src="./assets/icons/LinkedIn.svg"
+        class="social-media-icon"
+        alt="linkedin"
+      />
+      <img
+        src="./assets/icons/Instagram.svg"
+        class="social-media-icon"
+        alt="instagram"
+      />
+    </div>
+
+    <div v-if="interactHint" class="hint">
+      <img src="./assets/icons/Enter.svg" class="enter-icon" alt="enter" />
+      <span>Press <strong>Enter</strong> to see Mansion Features.</span>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from "vue";
+import { ref, defineComponent, onMounted } from "vue";
 import * as THREE from "three";
 import { gsap } from "gsap";
 import { RoundedBoxGeometry } from "three/examples/jsm/geometries/RoundedBoxGeometry.js";
@@ -49,7 +163,7 @@ import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import nipplejs from "nipplejs";
 import housesData from "./houses.js";
 
-export default {
+export default defineComponent({
   name: "App",
   setup() {
     /**
@@ -64,9 +178,9 @@ export default {
     const loadingBarElement = ref({});
     const loading = ref(true);
     const houseDetails = ref(false);
-    const house = ref({});
-    const balance = ref(7000000);
-    const interactHint = ref(false);
+    const house = ref(housesData[0]);
+    const balance = ref(1000000);
+    const interactHint = ref(true);
 
     const params = {
       firstPerson: true,
@@ -227,27 +341,27 @@ export default {
     loadColliderEnvironment();
 
     function init() {
-      const bgColor = 0x87cefa;
+      const bgColor = 0x00d4ff;
 
       // renderer setup
       renderer = new THREE.WebGLRenderer({
         antialias: true,
         powerPreference: "high-performance",
+        alpha: true,
       });
       renderer.setPixelRatio(window.devicePixelRatio);
       renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.setClearColor(bgColor, 1);
+      // renderer.setClearColor(bgColor, 1);
       renderer.outputEncoding = THREE.sRGBEncoding;
       document.body.appendChild(renderer.domElement);
 
       // scene setup
       scene = new THREE.Scene();
-      // scene.fog = new THREE.Fog(bgColor, 20, 70);
+      // scene.fog = new THREE.Fog(bgColor, 70, 200);
 
       // lights
-      const light = new THREE.DirectionalLight(0xffffff, 1);
-      light.position.set(0, 2, -2).multiplyScalar(100);
-      light.castShadow = true;
+      const light = new THREE.DirectionalLight(0xfdfbd3, 1);
+      light.position.set(0, 20, 0);
 
       scene.add(light);
       // const helper = new THREE.DirectionalLightHelper(light, 5);
@@ -264,7 +378,7 @@ export default {
       // );
       // scene.add(pointLightHelper);
 
-      const envlight = new THREE.HemisphereLight(0xffffff, bgColor, 0.4);
+      const envlight = new THREE.HemisphereLight(0xffffff, bgColor, 1);
       scene.add(envlight);
       // camera setup
       camera = new THREE.PerspectiveCamera(
@@ -274,7 +388,7 @@ export default {
         50
       );
 
-      camera.far = 500;
+      camera.far = 400;
       camera.updateProjectionMatrix();
       window.camera = camera;
 
@@ -455,11 +569,8 @@ export default {
     }
 
     function interact() {
-      if (
-        currentIntersect &&
-        currentIntersect.object.name.indexOf("area") !== -1
-      ) {
-        house.value = currentIntersect.object.userData.house;
+      if (currentIntersect && currentIntersect.name.indexOf("area") !== -1) {
+        house.value = currentIntersect.userData.house;
         houseDetails.value = true;
         console.log("currentIntersect.object :>> ", currentIntersect.object);
         // userData
@@ -670,27 +781,35 @@ export default {
       }
       // const objectsToTest = [object1, object2, object3];
       const intersects = raycaster.intersectObjects(buyArea);
-
+      if (
+        currentIntersect &&
+        !houseDetails.value &&
+        currentIntersect.name.indexOf("area") !== -1
+      ) {
+        interactHint.value = true;
+      } else {
+        interactHint.value = false;
+      }
       if (intersects.length) {
         if (!currentIntersect) {
           console.log("mouse enter:>> ");
-          currentIntersect = intersects[0];
+
+          currentIntersect = intersects[0].object.parent;
+          console.log("intersects :>> ", intersects);
         }
-        currentIntersect = intersects[0];
-        if (currentIntersect.object.name.indexOf("area") !== -1) {
-          currentIntersect.object.children[1].rotation.y += 0.05;
-          if (currentIntersect.object.children[0].position.y < 6) {
-            currentIntersect.object.children[0].position.y += 0.2;
-            currentIntersect.object.children[1].position.y += 0.125;
+        currentIntersect = intersects[0].object.parent;
+        if (currentIntersect.name.indexOf("area") !== -1) {
+          currentIntersect.children[3].rotation.y += 0.05;
+          if (currentIntersect.children[2].position.y < 5) {
+            currentIntersect.children[2].position.y += 0.2;
+            currentIntersect.children[3].position.y += 0.125;
           } else {
             if (up) {
-              if (currentIntersect.object.children[0].position.y > 6.4)
-                up = false;
-              else currentIntersect.object.children[0].position.y += 0.01;
+              if (currentIntersect.children[2].position.y > 5.4) up = false;
+              else currentIntersect.children[2].position.y += 0.01;
             } else {
-              if (currentIntersect.object.children[0].position.y < 6.2)
-                up = true;
-              else currentIntersect.object.children[0].position.y -= 0.01;
+              if (currentIntersect.children[2].position.y < 5.2) up = true;
+              else currentIntersect.children[2].position.y -= 0.01;
             }
           }
         }
@@ -701,10 +820,10 @@ export default {
         }
         currentIntersect = null;
       }
-      if (prevIntersect && prevIntersect.object.name.indexOf("area") !== -1) {
-        if (prevIntersect.object.children[0].position.y > 0) {
-          prevIntersect.object.children[0].position.y -= 0.4;
-          prevIntersect.object.children[1].position.y -= 0.25;
+      if (prevIntersect && prevIntersect.name.indexOf("area") !== -1) {
+        if (prevIntersect.children[2].position.y > 0) {
+          prevIntersect.children[2].position.y -= 0.4;
+          prevIntersect.children[3].position.y -= 0.25;
         } else prevIntersect = null;
       }
       // Update mixer
@@ -725,17 +844,28 @@ export default {
       balance,
     };
   },
-};
+});
 </script>
 
-<style>
+<style lang="scss">
 html,
 body {
   padding: 0;
   margin: 0;
   overflow: hidden;
+  font-family: "Montserrat", sans-serif;
 }
-
+body {
+  background: rgb(235, 252, 255);
+  background: linear-gradient(
+    0deg,
+    rgba(235, 252, 255, 1) 0%,
+    rgba(191, 244, 255, 1) 54%,
+    rgba(0, 212, 255, 1) 100%
+  );
+  margin: 0px;
+  overflow: hidden;
+}
 canvas {
   width: 100%;
   height: 100%;
@@ -754,11 +884,26 @@ canvas {
 .overlay {
   width: 100vw;
   height: 100vh;
+  overflow: hidden;
   position: absolute;
   opacity: 1;
-  background: black;
+  z-index: 999;
+  background: #239eda;
   top: 0;
   left: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  img {
+    max-width: 90vw;
+  }
+  span {
+    color: white;
+    font-size: 30px;
+    line-height: 37px;
+    margin-top: 100px;
+  }
 }
 .loading-bar {
   position: absolute;
@@ -776,20 +921,92 @@ canvas {
   transition: transform 1.5s ease-in-out;
 }
 .house-details {
-  width: 40vw;
-  height: 40vh;
-  background: grey;
+  width: 360px;
+  height: 533px;
   position: absolute;
   left: 0;
   right: 0;
   margin-left: auto;
   margin-right: auto;
-  top: 30vh;
-}
-.buy-house-button {
-  position: absolute;
-  right: 0;
-  bottom: 0;
+  top: calc((100vh - 533px) / 2);
+  .house-details-container {
+    height: 480px;
+    width: 100%;
+    .house-header {
+      background: #68c2c4;
+      height: 40%;
+      width: 100%;
+      border-top-left-radius: 35px;
+      border-top-right-radius: 35px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      .house-img {
+        position: absolute;
+        top: -60px;
+      }
+      span {
+        font-weight: 900;
+        font-size: 30px;
+        line-height: 35px;
+        color: #ffffff;
+        margin-bottom: 10px;
+      }
+    }
+    .house-body {
+      background: #ffffff;
+      height: 60%;
+      width: 100%;
+      border-bottom-left-radius: 35px;
+      border-bottom-right-radius: 35px;
+      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      .house-features {
+        max-width: 100%;
+        display: flex;
+        justify-content: space-between;
+        padding-top: 30px;
+        padding-left: 40px;
+        padding-right: 40px;
+        p {
+          margin: 0;
+        }
+        .details-label {
+          font-size: 16px;
+          line-height: 24px;
+          color: #627d93;
+        }
+        .details-value {
+          font-weight: 900;
+          font-size: 16px;
+          line-height: 24px;
+          color: #239eda;
+        }
+      }
+      .buy-house-button {
+        margin-left: 40px;
+        margin-right: 40px;
+        margin-bottom: 40px;
+        background: #239eda;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
+        border-radius: 16px;
+        height: 60px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        font-size: 30px;
+        line-height: 37px;
+        text-align: center;
+        color: #ffffff;
+        cursor: pointer;
+        translate: all 0.5s;
+      }
+    }
+  }
 }
 
 .interact-hint {
@@ -806,26 +1023,50 @@ canvas {
 }
 
 .balance {
-  width: 150px;
-  height: 50px;
+  width: 280px;
+  height: 60px;
   position: absolute;
-  right: 20px;
-  top: 20px;
-  background: blue;
+  right: 60px;
+  top: 40px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
+  color: #239eda;
+  font-size: 30px;
+  font-weight: bold;
+  font-style: normal;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  .logo {
+    height: 32px;
+    width: 32px;
+  }
 }
 
 .key-helper {
-  height: 120px;
   position: absolute;
-  left: 0;
-  bottom: 0;
-  padding: 10px;
+  left: 40px;
+  bottom: 50px;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
+  .walk-hint {
+    position: absolute;
+    bottom: -30px;
+    font-size: 20px;
+    font-style: normal;
+    font-weight: normal;
+    color: #ffffff;
+  }
+  .look-hint {
+    position: absolute;
+    bottom: -30px;
+    font-style: normal;
+    font-weight: normal;
+    font-size: 20px;
+    color: #ffffff;
+  }
 }
 .bottom-keys {
   display: flex;
@@ -835,13 +1076,77 @@ canvas {
   width: 100%;
 }
 .key {
-  width: 50px;
-  height: 50px;
-  border: 2px white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  margin: 5px;
+  color: #0ca6d7;
+  font-weight: bold;
+  font-size: 20px;
+  line-height: 20px;
+  background: #ffffff;
+  font-weight: bold;
+}
+.key-mouse {
+  margin-left: 30px;
+  .mouse {
+    height: 19.11px;
+    width: 24.93px;
+  }
+}
+.social-media {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  display: flex;
+  .social-media-icon {
+    height: 32px;
+    width: 32px;
+    margin: 0 10px;
+  }
+}
+.logo-home {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  .logo-home-icon {
+    height: 60px;
+  }
+}
+.hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 40px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 400px;
+  height: 120px;
+  background: linear-gradient(
+    263.11deg,
+    #64ccc9 5.68%,
+    #00a3e0 94.89%,
+    #00a3e0 94.89%
+  );
+  border: 1px solid #ffffff;
+  box-sizing: border-box;
+  border-radius: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 5px;
-  background: blue;
+  span {
+    font-size: 20px;
+    line-height: 23px;
+    max-width: 270px;
+    margin-left: 10px;
+    color: #ffffff;
+  }
+  img {
+    width: 60px;
+  }
 }
 </style>
