@@ -4,10 +4,24 @@
     <div v-if="loading" class="overlay">
       <div class="loading-bar" ref="loadingBarElement"></div>
     </div>
-    <div v-if="contactUs" @click="contactUs = false" class="contact-us">
-      contact us
+    <div
+      v-if="houseDetails"
+      @click="houseDetails = false"
+      class="house-details"
+    >
+      {{ house }}
+      <button class="buy-house-button">Buy</button>
     </div>
     <div v-if="interactHint" class="interact-hint">Interact Hint</div>
+    <div class="balance">{{ balance }} UBXS</div>
+    <div class="key-helper">
+      <div class="key">W</div>
+      <div class="bottom-keys">
+        <div class="key">A</div>
+        <div class="key">S</div>
+        <div class="key">D</div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -22,17 +36,18 @@ import {
   acceleratedRaycast,
   computeBoundsTree,
   disposeBoundsTree,
-  CENTER,
-  SAH,
-  AVERAGE,
+  // CENTER,
+  // SAH,
+  // AVERAGE,
   MeshBVH,
 } from "three-mesh-bvh";
-import Stats from "stats.js";
+// import Stats from "stats.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 
-import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
+// import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
 import nipplejs from "nipplejs";
+import housesData from "./houses.js";
 
 export default {
   name: "App",
@@ -48,7 +63,9 @@ export default {
     const joystick = ref({});
     const loadingBarElement = ref({});
     const loading = ref(true);
-    const contactUs = ref(false);
+    const houseDetails = ref(false);
+    const house = ref({});
+    const balance = ref(7000000);
     const interactHint = ref(false);
 
     const params = {
@@ -266,8 +283,8 @@ export default {
       controls = new OrbitControls(camera, renderer.domElement);
 
       // stats setup
-      stats = new Stats();
-      document.body.appendChild(stats.dom);
+      // stats = new Stats();
+      // document.body.appendChild(stats.dom);
 
       window.addEventListener(
         "resize",
@@ -322,6 +339,9 @@ export default {
             houses.push(c);
           }
           if (c.name.indexOf("area") !== -1) {
+            console.log("houses :>> ", housesData[0]);
+            console.log("buyArea.length :>> ", buyArea.length);
+            c.userData.house = housesData[buyArea.length];
             buyArea.push(c);
           }
         });
@@ -359,36 +379,36 @@ export default {
         });
 
         collider = new THREE.Mesh(mergedGeometry);
-        collider.material.wireframe = true;
-        collider.material.opacity = 0.5;
-        collider.material.transparent = true;
+        // collider.material.wireframe = true;
+        // collider.material.opacity = 0.5;
+        // collider.material.transparent = true;
 
-        scene.add(collider);
+        // scene.add(collider);
         scene.add(gltfScene);
       });
 
       // dat.gui
-      gui = new GUI();
-      gui.add(params, "firstPerson").onChange((v) => {
-        if (!v) {
-          camera.position
-            .sub(controls.target)
-            .normalize()
-            .multiplyScalar(10)
-            .add(controls.target);
-        }
-      });
+      // gui = new GUI();
+      // gui.add(params, "firstPerson").onChange((v) => {
+      //   if (!v) {
+      //     camera.position
+      //       .sub(controls.target)
+      //       .normalize()
+      //       .multiplyScalar(10)
+      //       .add(controls.target);
+      //   }
+      // });
 
-      const physicsFolder = gui.addFolder("Player");
-      physicsFolder.add(params, "physicsSteps", 0, 30, 1);
-      physicsFolder.add(params, "gravity", -100, 100, 0.01).onChange((v) => {
-        params.gravity = parseFloat(v);
-      });
-      physicsFolder.add(params, "playerSpeed", 1, 20);
-      physicsFolder.open();
+      // const physicsFolder = gui.addFolder("Player");
+      // physicsFolder.add(params, "physicsSteps", 0, 30, 1);
+      // physicsFolder.add(params, "gravity", -100, 100, 0.01).onChange((v) => {
+      //   params.gravity = parseFloat(v);
+      // });
+      // physicsFolder.add(params, "playerSpeed", 1, 20);
+      // physicsFolder.open();
 
-      gui.add(params, "reset");
-      gui.open();
+      // gui.add(params, "reset");
+      // gui.open();
 
       window.addEventListener("keydown", function (e) {
         switch (e.code) {
@@ -435,16 +455,14 @@ export default {
     }
 
     function interact() {
-      const x = player.position.x;
-      const z = player.position.z;
       if (
-        x > 4 &&
-        x < 23.39 &&
-        z > -191 &&
-        z < -181 &&
-        contactUs.value === false
+        currentIntersect &&
+        currentIntersect.object.name.indexOf("area") !== -1
       ) {
-        contactUs.value = true;
+        house.value = currentIntersect.object.userData.house;
+        houseDetails.value = true;
+        console.log("currentIntersect.object :>> ", currentIntersect.object);
+        // userData
       }
     }
 
@@ -614,7 +632,7 @@ export default {
     }
     let up = true;
     function render() {
-      stats.update();
+      // stats.update();
       requestAnimationFrame(render);
 
       const delta = Math.min(clock.getDelta(), 0.1);
@@ -628,26 +646,11 @@ export default {
         controls.maxDistance = 20;
       }
 
-      if (collider) {
+      if (collider && houseDetails.value === false) {
         const physicsSteps = params.physicsSteps;
 
         for (let i = 0; i < physicsSteps; i++) {
           updatePlayer(delta / physicsSteps);
-        }
-      }
-      if (player) {
-        const x = player.position.x;
-        const z = player.position.z;
-        if (
-          x > 4 &&
-          x < 23.39 &&
-          z > -191 &&
-          z < -181 &&
-          contactUs.value === false
-        ) {
-          interactHint.value = true;
-        } else {
-          interactHint.value = false;
         }
       }
 
@@ -674,7 +677,6 @@ export default {
           currentIntersect = intersects[0];
         }
         currentIntersect = intersects[0];
-        console.log("currentIntersect :>> ", currentIntersect);
         if (currentIntersect.object.name.indexOf("area") !== -1) {
           currentIntersect.object.children[1].rotation.y += 0.05;
           if (currentIntersect.object.children[0].position.y < 6) {
@@ -717,8 +719,10 @@ export default {
       joystick,
       loading,
       loadingBarElement,
-      contactUs,
+      houseDetails,
+      house,
       interactHint,
+      balance,
     };
   },
 };
@@ -771,18 +775,23 @@ canvas {
   transform-origin: 100% 0;
   transition: transform 1.5s ease-in-out;
 }
-.contact-us {
-  width: 200px;
-  height: 200px;
+.house-details {
+  width: 40vw;
+  height: 40vh;
   background: grey;
-  z-index: 99999;
   position: absolute;
   left: 0;
   right: 0;
   margin-left: auto;
   margin-right: auto;
-  top: 50%;
+  top: 30vh;
 }
+.buy-house-button {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+}
+
 .interact-hint {
   width: 200px;
   height: 100px;
@@ -794,5 +803,45 @@ canvas {
   margin-left: auto;
   margin-right: auto;
   top: 10%;
+}
+
+.balance {
+  width: 150px;
+  height: 50px;
+  position: absolute;
+  right: 20px;
+  top: 20px;
+  background: blue;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.key-helper {
+  height: 120px;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.bottom-keys {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  height: 50px;
+  width: 100%;
+}
+.key {
+  width: 50px;
+  height: 50px;
+  border: 2px white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 5px;
+  background: blue;
 }
 </style>
