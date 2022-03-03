@@ -43,7 +43,7 @@ export default {
     THREE.Mesh.prototype.raycast = acceleratedRaycast;
     THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
     THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
-
+    let mixer = null;
     const container = ref({});
     const joystick = ref({});
     const loadingBarElement = ref({});
@@ -71,6 +71,23 @@ export default {
     let renderer, camera, scene, clock, gui, stats;
     let environment, collider, player, controls;
 
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let currentIntersect = null;
+    let prevIntersect = null;
+    const houses = [];
+    const buyArea = [];
+
+    window.addEventListener("mousemove", (_event) => {
+      mouse.x = (_event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(_event.clientY / window.innerHeight) * 2 + 1;
+    });
+
+    window.addEventListener("click", (_event) => {
+      if (currentIntersect) {
+        console.log("clic :>> ");
+      }
+    });
     let playerIsOnGround = false;
     let fwdPressed = false,
       bkdPressed = false,
@@ -101,7 +118,7 @@ export default {
       (itemUrl, itemsLoaded, itemsTotal) => {
         const progressRatio = itemsLoaded / itemsTotal;
         loadingBarElement.value.style.transform = `scaleX(${progressRatio})`;
-        console.log(itemsTotal, "/", itemsLoaded);
+        // console.log(itemsTotal, "/", itemsLoaded);
       },
       () => {
         console.log("error");
@@ -212,11 +229,26 @@ export default {
 
       // lights
       const light = new THREE.DirectionalLight(0xffffff, 1);
-      light.position.set(1, 1.5, 1).multiplyScalar(50);
+      light.position.set(0, 2, -2).multiplyScalar(100);
+      light.castShadow = true;
+
       scene.add(light);
+      // const helper = new THREE.DirectionalLightHelper(light, 5);
+      // scene.add(helper);
 
-      scene.add(new THREE.HemisphereLight(0xffffff, bgColor, 1));
+      const pointLight = new THREE.PointLight(0xffffff, 0.4, 20);
+      pointLight.position.set(0, 10, -170);
+      scene.add(pointLight);
 
+      // const sphereSize = 1;
+      // const pointLightHelper = new THREE.PointLightHelper(
+      //   pointLight,
+      //   sphereSize
+      // );
+      // scene.add(pointLightHelper);
+
+      const envlight = new THREE.HemisphereLight(0xffffff, bgColor, 0.4);
+      scene.add(envlight);
       // camera setup
       camera = new THREE.PerspectiveCamera(
         75,
@@ -225,7 +257,7 @@ export default {
         50
       );
 
-      camera.far = 100;
+      camera.far = 500;
       camera.updateProjectionMatrix();
       window.camera = camera;
 
@@ -270,54 +302,41 @@ export default {
         // map
         const gltfScene = res.scene;
         gltfScene.scale.setScalar(20);
+        mixer = new THREE.AnimationMixer(gltfScene);
+        for (let index = 0; index < res.animations.length; index++) {
+          let animationName = res.animations[index].name;
+          if (
+            animationName.indexOf("buy") === -1 &&
+            animationName.indexOf("circle") === -1 &&
+            animationName.indexOf("circle") === -1
+          ) {
+            const anim = mixer.clipAction(res.animations[index]);
+            anim.timeScale *= 15;
+            anim.play();
+          }
+        }
 
         const toMerge = {};
         gltfScene.traverse((c) => {
-          if (c.isMesh) {
-            const hex = c.material.color.getHex();
-            toMerge[hex] = toMerge[hex] || [];
-            toMerge[hex].push(c);
+          if (c.name.indexOf("HOUSE") !== -1) {
+            houses.push(c);
+          }
+          if (c.name.indexOf("area") !== -1) {
+            buyArea.push(c);
           }
         });
-
-        environment = new THREE.Group();
-        for (const hex in toMerge) {
-          const arr = toMerge[hex];
-          const visualGeometries = [];
-          arr.forEach((mesh) => {
-            if (
-              mesh.material.emissive.r !== 0 ||
-              !mesh.geometry.attributes.uv
-            ) {
-              environment.attach(mesh);
-            } else {
-              const geom = mesh.geometry.clone();
-              geom.applyMatrix4(mesh.matrixWorld);
-              visualGeometries.push(geom);
-            }
-          });
-
-          if (visualGeometries.length) {
-            const newGeom =
-              BufferGeometryUtils.mergeBufferGeometries(visualGeometries);
-            const newMesh = new THREE.Mesh(
-              newGeom,
-              new THREE.MeshStandardMaterial({
-                color: parseInt(hex),
-                shadowSide: 2,
-              })
-            );
-            newMesh.castShadow = true;
-            newMesh.receiveShadow = true;
-            newMesh.material.shadowSide = 2;
-
-            environment.add(newMesh);
-          }
-        }
         const geometries = [];
         gltfScene.updateMatrixWorld(true);
         gltfScene.traverse((c) => {
-          if (c.geometry) {
+          if (
+            c.name.indexOf("ocean") !== -1 ||
+            c.name.indexOf("area") !== -1 ||
+            (c.parent && c.parent.name.indexOf("area") !== -1) ||
+            c.name.indexOf("token") !== -1 ||
+            (c.parent && c.parent.name.indexOf("token") !== -1)
+          ) {
+            console.log("c :>> ", c);
+          } else if (c.geometry && c.name !== "cloud") {
             const cloned = c.geometry.clone();
             cloned.applyMatrix4(c.matrixWorld);
             for (const key in cloned.attributes) {
@@ -340,7 +359,11 @@ export default {
         });
 
         collider = new THREE.Mesh(mergedGeometry);
+        collider.material.wireframe = true;
+        collider.material.opacity = 0.5;
+        collider.material.transparent = true;
 
+        scene.add(collider);
         scene.add(gltfScene);
       });
 
@@ -412,11 +435,15 @@ export default {
     }
 
     function interact() {
-      console.log("player.position.x :>> ", player.position.x);
-      console.log("player.position.z :>> ", player.position.z);
       const x = player.position.x;
       const z = player.position.z;
-      if (x > 7 && x < 20 && z > -194 && z < -187) {
+      if (
+        x > 4 &&
+        x < 23.39 &&
+        z > -191 &&
+        z < -181 &&
+        contactUs.value === false
+      ) {
         contactUs.value = true;
       }
     }
@@ -585,7 +612,7 @@ export default {
         reset();
       }
     }
-
+    let up = true;
     function render() {
       stats.update();
       requestAnimationFrame(render);
@@ -612,10 +639,10 @@ export default {
         const x = player.position.x;
         const z = player.position.z;
         if (
-          x > 7 &&
-          x < 20 &&
-          z > -194 &&
-          z < -187 &&
+          x > 4 &&
+          x < 23.39 &&
+          z > -191 &&
+          z < -181 &&
           contactUs.value === false
         ) {
           interactHint.value = true;
@@ -626,8 +653,62 @@ export default {
 
       // TODO: limit the camera movement based on the collider
       // raycast in direction of camera and move it if it's further than the closest point
-      // rayCasterObjects.forEach((f) => f.update());
 
+      if (player) {
+        let DOWN_DIRECTION = new THREE.Vector3(0, -1, 0);
+        raycaster.set(
+          new THREE.Vector3(
+            player.position.x,
+            player.position.y,
+            player.position.z
+          ),
+          DOWN_DIRECTION
+        );
+      }
+      // const objectsToTest = [object1, object2, object3];
+      const intersects = raycaster.intersectObjects(buyArea);
+
+      if (intersects.length) {
+        if (!currentIntersect) {
+          console.log("mouse enter:>> ");
+          currentIntersect = intersects[0];
+        }
+        currentIntersect = intersects[0];
+        console.log("currentIntersect :>> ", currentIntersect);
+        if (currentIntersect.object.name.indexOf("area") !== -1) {
+          currentIntersect.object.children[1].rotation.y += 0.05;
+          if (currentIntersect.object.children[0].position.y < 6) {
+            currentIntersect.object.children[0].position.y += 0.2;
+            currentIntersect.object.children[1].position.y += 0.125;
+          } else {
+            if (up) {
+              if (currentIntersect.object.children[0].position.y > 6.4)
+                up = false;
+              else currentIntersect.object.children[0].position.y += 0.01;
+            } else {
+              if (currentIntersect.object.children[0].position.y < 6.2)
+                up = true;
+              else currentIntersect.object.children[0].position.y -= 0.01;
+            }
+          }
+        }
+      } else {
+        if (currentIntersect) {
+          console.log("mouse leave:>> ");
+          prevIntersect = currentIntersect;
+        }
+        currentIntersect = null;
+      }
+      if (prevIntersect && prevIntersect.object.name.indexOf("area") !== -1) {
+        if (prevIntersect.object.children[0].position.y > 0) {
+          prevIntersect.object.children[0].position.y -= 0.4;
+          prevIntersect.object.children[1].position.y -= 0.25;
+        } else prevIntersect = null;
+      }
+      // Update mixer
+      if (mixer) {
+        mixer.update(clock.getDelta());
+      }
       controls.update();
       renderer.render(scene, camera);
     }
