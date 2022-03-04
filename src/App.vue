@@ -88,12 +88,52 @@
       autoplay
     ></lottie-player>
 
-    <div class="logo-home">
+    <div v-if="deviceType() === 'desktop'" class="logo-home">
       <img
         src="./assets/icons/Bixos-light-text.svg"
         class="logo-home-icon"
         alt="logo-home"
       />
+    </div>
+    <div v-else class="logo-home">
+      <img
+        src="./assets/icons/Bixos-light.svg"
+        class="logo-home-icon"
+        alt="logo-home"
+      />
+    </div>
+    <Drawer
+      v-if="deviceType() !== 'desktop'"
+      :direction="'right'"
+      :exist="true"
+      ref="LeftDrawer"
+    >
+      <div class="logo-home">
+        <img
+          src="./assets/icons/Bixos-light-text.svg"
+          class="logo-home-icon drawer-logo"
+          alt="logo-home"
+        />
+      </div>
+      <div class="nav">
+        <div v-for="link in links" :key="link.path" class="linksContainer">
+          <img :src="link.icon" class="link-icon" alt="link-icon" />
+          <router-link class="link" :to="link.path">{{
+            link.title
+          }}</router-link>
+        </div>
+      </div>
+    </Drawer>
+    <div
+      class="humburger-container"
+      @click="openMenu"
+      v-if="deviceType() !== 'desktop'"
+    >
+      <div class="hamburger" :class="hamburgerOpen ? 'hamburger--is-open' : ''">
+        <div class="hamburger__item hamburger__item--first"></div>
+        <div class="hamburger__item hamburger__item--middle"></div>
+        <div class="hamburger__item hamburger__item--last"></div>
+      </div>
     </div>
     <div class="balance">
       <img src="./assets/icons/Bixos.svg" class="logo" alt="bixos-logo" />
@@ -250,9 +290,18 @@ import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 // import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
 import nipplejs from "nipplejs";
 import housesData from "./houses.js";
+import Drawer from "./components/Drawer.vue";
+import Telegram from "./assets/icons/Telegram.svg";
+import BixosLight from "./assets/icons/Bixos-light.svg";
+import Discord from "./assets/icons/Discord.svg";
+import Twitter from "./assets/icons/Twitter.svg";
+import LinkedIn from "./assets/icons/LinkedIn.svg";
+import Instagram from "./assets/icons/Instagram.svg";
 
 export default defineComponent({
   name: "App",
+  components: { Drawer },
+
   setup() {
     /**
      * rayVariables
@@ -968,6 +1017,59 @@ export default defineComponent({
       reset,
     };
   },
+  data() {
+    return {
+      isMounted: false,
+      links: [
+        {
+          icon: BixosLight,
+          title: "Bixos.io",
+        },
+        {
+          icon: Telegram,
+          title: "Telegram",
+        },
+        {
+          icon: Discord,
+          title: "Discord",
+        },
+        {
+          icon: Twitter,
+          title: "Twitter",
+        },
+        {
+          icon: LinkedIn,
+          title: "LinkedIn",
+        },
+        {
+          icon: Instagram,
+          title: "Instagram",
+        },
+      ],
+    };
+  },
+  methods: {
+    openMenu() {
+      if (this.$refs.LeftDrawer.active) {
+        this.$refs.LeftDrawer.close();
+      } else {
+        this.$refs.LeftDrawer.open();
+      }
+    },
+  },
+  computed: {
+    hamburgerOpen() {
+      if (!this.isMounted) return false;
+      if (this.$refs.LeftDrawer.active) {
+        return true;
+      } else {
+        return false;
+      }
+    },
+  },
+  mounted() {
+    this.isMounted = true;
+  },
 });
 </script>
 
@@ -1204,11 +1306,15 @@ canvas {
   right: 40px;
   top: 40px;
   @media only screen and (max-width: 1024px) {
-    width: 140px;
-    height: 30px;
-    right: 20px;
+    width: 200px;
+    max-width: 40vw;
+    height: 60px;
+    right: 100px;
     top: 20px;
-    font-size: 15px;
+    font-size: 24px;
+
+    margin-left: auto;
+    margin-right: auto;
   }
   background: #ffffff;
   border-radius: 16px;
@@ -1224,10 +1330,6 @@ canvas {
   .logo {
     height: 32px;
     width: 32px;
-    @media only screen and (max-width: 1024px) {
-      height: 16px;
-      width: 16px;
-    }
   }
 }
 
@@ -1309,15 +1411,16 @@ canvas {
   }
   .logo-home-icon {
     height: 60px;
-    @media only screen and (max-width: 1024px) {
-      height: 30px;
-    }
   }
   cursor: pointer;
   &:hover {
     filter: invert(52%) sepia(40%) saturate(945%) hue-rotate(148deg)
       brightness(94%) contrast(100%);
   }
+}
+.drawer-logo {
+  filter: invert(52%) sepia(40%) saturate(945%) hue-rotate(148deg)
+    brightness(94%) contrast(100%);
 }
 .hint {
   position: absolute;
@@ -1478,5 +1581,80 @@ canvas {
 .overlay.ended {
   filter: blur(1.5rem);
   transition: filter 1s ease-in-out;
+}
+.humburger-container {
+  background: #ffffff;
+  border-radius: 16px;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 60px;
+  height: 60px;
+  cursor: pointer;
+  z-index: 9999;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.hamburger {
+  transition: all 0.4s ease-in-out;
+
+  height: 28px;
+  width: 33px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  &:hover {
+    cursor: pointer;
+  }
+
+  &__item {
+    height: 4px;
+    width: 100%;
+    background: #239eda;
+    transition: transform 300ms cubic-bezier(0.445, 0.05, 0.55, 0.95),
+      opacity 300ms linear;
+
+    &--first {
+      .hamburger--is-open & {
+        transform: translate(0, 12px) rotate(45deg);
+      }
+    }
+
+    &--middle {
+      .hamburger--is-open & {
+        opacity: 0;
+      }
+    }
+
+    &--last {
+      .hamburger--is-open & {
+        transform: translate(0, -12px) rotate(-45deg);
+      }
+    }
+  }
+}
+.hamburger--is-open {
+  // right: 250px;
+  transition: all 0.4s ease-in-out;
+}
+
+.nav {
+  padding-top: 120px;
+  padding-left: 40px;
+  .linksContainer {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    .link {
+      font-size: 24px;
+      margin-left: 10px;
+    }
+    .link-icon {
+      filter: invert(52%) sepia(40%) saturate(945%) hue-rotate(148deg)
+        brightness(94%) contrast(100%);
+    }
+  }
 }
 </style>
