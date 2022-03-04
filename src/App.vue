@@ -713,22 +713,48 @@ export default defineComponent({
       // renderer.setClearColor(bgColor, 1);
       renderer.outputEncoding = THREE.sRGBEncoding;
       document.body.appendChild(renderer.domElement);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
       // scene setup
       scene = new THREE.Scene();
       // scene.fog = new THREE.Fog(bgColor, 70, 200);
 
       // lights
-      const light = new THREE.DirectionalLight(0xfdfbd3, 1);
-      light.position.set(0, 20, 0);
+      const light = new THREE.DirectionalLight(0xfdfbd3, 1, 100);
+      light.position.set(0, 1, -0.025);
+      light.position.multiplyScalar(50);
 
+      // light.shadow.camera.far = 15;
+      // light.shadow.mapSize.set(1024, 1024);
+      light.shadowMapWidth = light.shadowMapHeight = 1024 * 2;
+      light.castShadow = true;
+      // light.shadow.mapSize.width = 512; // default
+      // light.shadow.mapSize.height = 512; // default
+      light.shadow.camera.near = 0.5; // default
+      light.shadow.camera.far = 500;
+      var d = 300;
+
+      light.shadowCameraLeft = -d;
+      light.shadowCameraRight = d;
+      light.shadowCameraTop = d;
+      light.shadowCameraBottom = -d;
+
+      light.shadowCameraFar = 3500;
+      light.shadowBias = -0.0001;
+      light.shadowDarkness = 0.35;
+      light.shadow.normalBias = 0.05;
       scene.add(light);
+
+      // const helper = new THREE.CameraHelper(light.shadow.camera);
+      // scene.add(helper);
       // const helper = new THREE.DirectionalLightHelper(light, 5);
       // scene.add(helper);
 
       const pointLight = new THREE.PointLight(0xffffff, 0.4, 20);
       pointLight.position.set(0, 10, -170);
       scene.add(pointLight);
+      // pointLight.castShadow = true;
 
       // const sphereSize = 1;
       // const pointLightHelper = new THREE.PointLightHelper(
@@ -737,8 +763,11 @@ export default defineComponent({
       // );
       // scene.add(pointLightHelper);
 
-      const envlight = new THREE.HemisphereLight(0xffffff, bgColor, 1);
-      scene.add(envlight);
+      var hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+      hemiLight.color.setHSL(0.6, 0.75, 0.5);
+      hemiLight.groundColor.setHSL(0.095, 0.5, 0.5);
+      hemiLight.position.set(0, 500, 0);
+      scene.add(hemiLight);
       // camera setup
       camera = new THREE.PerspectiveCamera(
         75,
@@ -808,6 +837,8 @@ export default defineComponent({
 
         const toMerge = {};
         gltfScene.traverse((c) => {
+          c.castShadow = true;
+          c.receiveShadow = true;
           if (c.name.indexOf("HOUSE") !== -1) {
             houses.push(c);
           }
@@ -963,7 +994,7 @@ export default defineComponent({
           tempVector.set(0, 0, -1).applyAxisAngle(upVector, angle);
           player.position.addScaledVector(
             tempVector,
-            (params.playerSpeed * delta * speedAngle.up) / 2
+            params.playerSpeed * delta * speedAngle.up
           );
         }
 
@@ -971,7 +1002,7 @@ export default defineComponent({
           tempVector.set(0, 0, 1).applyAxisAngle(upVector, angle);
           player.position.addScaledVector(
             tempVector,
-            (params.playerSpeed * delta * speedAngle.down) / 2
+            params.playerSpeed * delta * speedAngle.down
           );
         }
 
@@ -979,7 +1010,7 @@ export default defineComponent({
           tempVector.set(-1, 0, 0).applyAxisAngle(upVector, angle);
           player.position.addScaledVector(
             tempVector,
-            (params.playerSpeed * delta * speedAngle.left) / 2
+            params.playerSpeed * delta * speedAngle.left
           );
         }
 
@@ -987,7 +1018,7 @@ export default defineComponent({
           tempVector.set(1, 0, 0).applyAxisAngle(upVector, angle);
           player.position.addScaledVector(
             tempVector,
-            (params.playerSpeed * delta * speedAngle.right) / 2
+            params.playerSpeed * delta * speedAngle.right
           );
         }
       } else {
