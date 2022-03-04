@@ -69,8 +69,8 @@
       </div>
     </div>
     <lottie-player
-      v-if="houseDetails"
-      src="https://assets8.lottiefiles.com/packages/lf20_nxsyeqbd.json"
+      v-if="celebrate"
+      src="https://assets2.lottiefiles.com/packages/lf20_rovf9gzu.json"
       background="transparent"
       speed="1"
       class="CelebBuy"
@@ -89,7 +89,7 @@
       <img src="./assets/icons/Bixos.svg" class="logo" alt="bixos-logo" />
       <span>{{ balance.toLocaleString("es-ES") }}</span>
     </div>
-    <div class="key-helper">
+    <div v-if="deviceType() === 'desktop'" class="key-helper">
       <div style="display: flex; flex-direction: column; align-items: center">
         <div class="key">
           <span>W</span>
@@ -132,7 +132,7 @@
         <span class="look-hint"> Look </span>
       </div>
     </div>
-    <div class="social-media">
+    <div v-if="deviceType() === 'desktop'" class="social-media">
       <img
         src="./assets/icons/Telegram.svg"
         class="social-media-icon"
@@ -169,11 +169,26 @@
         -o-user-select: none;
       "
       unselectable="on"
-      v-if="interactHint"
+      v-if="interactHint && deviceType() === 'desktop'"
       class="hint"
     >
       <img src="./assets/icons/Enter.svg" class="enter-icon" alt="enter" />
       <span>Press <strong>Enter</strong> to see Mansion Features.</span>
+    </div>
+    <div
+      style="
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -o-user-select: none;
+      "
+      unselectable="on"
+      @click="interact()"
+      v-if="interactHint && deviceType() !== 'desktop'"
+      class="home-details-button"
+    >
+      <span>Open</span>
     </div>
   </div>
 </template>
@@ -217,15 +232,25 @@ export default defineComponent({
     const loadingBarElement = ref({});
     const loading = ref(true);
     const houseDetails = ref(false);
-    const house = ref([]);
+    const house = ref({});
     const balance = ref(1000000);
     const interactHint = ref(true);
+    const celebrate = ref(false);
+    const hitSound = new Audio(require("./assets/AudioBuy.mp3"));
+
     const buyHouse = () => {
       house.value.sold = true;
       house.value.Owner = "You";
       houseDetails.value = false;
       balance.value -= house.value.price;
       currentIntersect.userData.house = house.value;
+      celebrate.value = true;
+      hitSound.currentTime = 0;
+      hitSound.volume = 1;
+      hitSound.play();
+      setTimeout(() => {
+        celebrate.value = false;
+      }, 3000);
     };
     const sellHouse = () => {
       house.value.sold = false;
@@ -233,6 +258,13 @@ export default defineComponent({
       houseDetails.value = false;
       balance.value += house.value.price;
       currentIntersect.userData.house = house.value;
+      celebrate.value = true;
+      hitSound.currentTime = 0;
+      hitSound.volume = 1;
+      hitSound.play();
+      setTimeout(() => {
+        celebrate.value = false;
+      }, 3000);
     };
 
     const params = {
@@ -336,7 +368,7 @@ export default defineComponent({
         var options = {
           zone: joystick.value,
           mode: "static",
-          color: "red",
+          color: "#239eda",
           position: {
             left: "50%",
             top: "50%",
@@ -894,9 +926,12 @@ export default defineComponent({
       houseDetails,
       house,
       interactHint,
+      celebrate,
       balance,
       buyHouse,
       sellHouse,
+      deviceType,
+      interact,
     };
   },
 });
@@ -929,11 +964,10 @@ canvas {
 
 .joystick-container {
   position: absolute;
-  left: 0;
-  right: 0;
+  left: 40px;
   margin-left: auto;
   margin-right: auto;
-  top: 80%;
+  bottom: 40px;
   width: 100px;
   height: 100px;
 }
@@ -985,12 +1019,16 @@ canvas {
 .house-details {
   width: 360px;
   height: 533px;
+  max-height: 87vh;
   position: absolute;
   left: 0;
   right: 0;
   margin-left: auto;
   margin-right: auto;
   top: calc((100vh - 533px) / 2);
+  @media only screen and (max-width: 1250px) {
+    top: 13vh;
+  }
   .close-icon {
     position: absolute;
     top: -40px;
@@ -1004,6 +1042,7 @@ canvas {
   }
   .house-details-container {
     height: 480px;
+    max-height: 83vh;
     width: 100%;
     .house-header {
       background: #68c2c4;
@@ -1044,6 +1083,9 @@ canvas {
         padding-top: 30px;
         padding-left: 40px;
         padding-right: 40px;
+        @media only screen and (max-width: 1024px) {
+          padding-top: 15px;
+        }
         p {
           margin: 0;
         }
@@ -1063,6 +1105,9 @@ canvas {
         margin-left: 40px;
         margin-right: 40px;
         margin-bottom: 40px;
+        @media only screen and (max-width: 1024px) {
+          margin-bottom: 20px;
+        }
         background: #239eda;
         box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
         border-radius: 16px;
@@ -1158,9 +1203,17 @@ canvas {
 .balance {
   width: 280px;
   height: 60px;
+
   position: absolute;
-  right: 60px;
+  right: 40px;
   top: 40px;
+  @media only screen and (max-width: 1024px) {
+    width: 140px;
+    height: 30px;
+    right: 40px;
+    top: 20px;
+    font-size: 15px;
+  }
   background: #ffffff;
   border-radius: 16px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
@@ -1175,6 +1228,10 @@ canvas {
   .logo {
     height: 32px;
     width: 32px;
+    @media only screen and (max-width: 1024px) {
+    }
+    height: 16px;
+    width: 16px;
   }
 }
 
@@ -1251,8 +1308,15 @@ canvas {
   position: absolute;
   top: 40px;
   left: 40px;
+  @media only screen and (max-width: 1024px) {
+    left: 40px;
+    top: 20px;
+  }
   .logo-home-icon {
     height: 60px;
+    @media only screen and (max-width: 1024px) {
+      height: 30px;
+    }
   }
   cursor: pointer;
   &:hover {
@@ -1294,12 +1358,30 @@ canvas {
 }
 .CelebBuy {
   position: absolute;
-  left: 0;
   right: 0;
-  top: 10vh;
+  top: 00vh;
   margin-left: auto;
   margin-right: auto;
-  width: 70vw;
+  width: 100vw;
   z-index: 100;
+}
+.home-details-button {
+  position: absolute;
+  right: 40px;
+  bottom: 40px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  background: white;
+  color: #0ca6d7;
+  font-weight: bold;
+  font-size: 20px;
+  line-height: 20px;
+  background: #ffffff;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
+  &:active {
+    animation: press 0.2s 1 linear;
+  }
 }
 </style>
