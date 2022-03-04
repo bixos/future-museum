@@ -11,11 +11,14 @@
       <span>LOADING</span>
       <div style="height: 140px"></div>
     </div>
-    <div
-      v-if="houseDetails"
-      @click="houseDetails = false"
-      class="house-details"
-    >
+    <div v-if="houseDetails" class="house-wraper"></div>
+    <div v-if="houseDetails" class="house-details">
+      <img
+        @click="houseDetails = false"
+        src="./assets/icons/Close.svg"
+        class="close-icon"
+        alt="Close"
+      />
       <div class="house-details-container">
         <div class="house-header">
           <img src="./assets/house.png" class="house-img" alt="house" />
@@ -43,13 +46,38 @@
               <p>: {{ house.age }}</p>
               <p>: {{ house.floors }}</p>
               <p>: {{ house.m2 }}</p>
-              <p>: {{ house.owner }}</p>
+              <p>: {{ house.Owner }}</p>
             </div>
           </div>
-          <div @click="buyHouse" class="buy-house-button">Buy</div>
+          <button
+            :disabled="house.price > balance"
+            @click="buyHouse"
+            v-if="!house.sold"
+            :class="house.price > balance ? 'disabled-buy-buttom' : ''"
+            class="buy-house-button"
+          >
+            Buy
+          </button>
+          <button
+            @click="sellHouse"
+            v-if="house.sold"
+            class="sell-house-button"
+          >
+            Sell
+          </button>
         </div>
       </div>
     </div>
+    <lottie-player
+      v-if="houseDetails"
+      src="https://assets8.lottiefiles.com/packages/lf20_nxsyeqbd.json"
+      background="transparent"
+      speed="1"
+      class="CelebBuy"
+      loop
+      autoplay
+    ></lottie-player>
+
     <div class="logo-home">
       <img
         src="./assets/icons/Bixos-light-text.svg"
@@ -132,7 +160,18 @@
       />
     </div>
 
-    <div v-if="interactHint" class="hint">
+    <div
+      style="
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -o-user-select: none;
+      "
+      unselectable="on"
+      v-if="interactHint"
+      class="hint"
+    >
       <img src="./assets/icons/Enter.svg" class="enter-icon" alt="enter" />
       <span>Press <strong>Enter</strong> to see Mansion Features.</span>
     </div>
@@ -178,9 +217,23 @@ export default defineComponent({
     const loadingBarElement = ref({});
     const loading = ref(true);
     const houseDetails = ref(false);
-    const house = ref(housesData[0]);
+    const house = ref([]);
     const balance = ref(1000000);
     const interactHint = ref(true);
+    const buyHouse = () => {
+      house.value.sold = true;
+      house.value.Owner = "You";
+      houseDetails.value = false;
+      balance.value -= house.value.price;
+      currentIntersect.userData.house = house.value;
+    };
+    const sellHouse = () => {
+      house.value.sold = false;
+      house.value.Owner = "Bixos Inc";
+      houseDetails.value = false;
+      balance.value += house.value.price;
+      currentIntersect.userData.house = house.value;
+    };
 
     const params = {
       firstPerson: true,
@@ -842,6 +895,8 @@ export default defineComponent({
       house,
       interactHint,
       balance,
+      buyHouse,
+      sellHouse,
     };
   },
 });
@@ -856,6 +911,7 @@ body {
   font-family: "Montserrat", sans-serif;
 }
 body {
+  // background: black;
   background: rgb(235, 252, 255);
   background: linear-gradient(
     0deg,
@@ -920,6 +976,12 @@ canvas {
   transform-origin: 100% 0;
   transition: transform 1.5s ease-in-out;
 }
+.house-wraper {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(37, 55, 70, 0.75);
+}
 .house-details {
   width: 360px;
   height: 533px;
@@ -929,6 +991,17 @@ canvas {
   margin-left: auto;
   margin-right: auto;
   top: calc((100vh - 533px) / 2);
+  .close-icon {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    height: 25px;
+    z-index: 10;
+    cursor: pointer;
+    &:active {
+      animation: press 0.2s 1 linear;
+    }
+  }
   .house-details-container {
     height: 480px;
     width: 100%;
@@ -1004,7 +1077,67 @@ canvas {
         color: #ffffff;
         cursor: pointer;
         translate: all 0.5s;
+        outline: none;
+        border: none;
+        &:hover {
+          background-color: #1f8ec4;
+        }
+        &:active {
+          background-color: #1f8ec4;
+          // box-shadow: 0 5px #666;
+          // transform: translateY(4px);
+          animation: press 0.2s 1 linear;
+        }
       }
+
+      .disabled-buy-buttom {
+        background: #abc5d4;
+        &:hover {
+          background-color: #abc5d4;
+          cursor: not-allowed;
+        }
+      }
+      .sell-house-button {
+        margin-left: 40px;
+        margin-right: 40px;
+        margin-bottom: 40px;
+        background: #e5485b;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
+        border-radius: 16px;
+        height: 60px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: bold;
+        font-size: 30px;
+        line-height: 37px;
+        text-align: center;
+        color: #ffffff;
+        cursor: pointer;
+        translate: all 0.5s;
+        outline: none;
+        border: none;
+        &:hover {
+          background-color: #e12d43;
+        }
+        &:active {
+          background-color: #e12d43;
+          // box-shadow: 0 5px #666;
+          // transform: translateY(4px);
+          animation: press 0.2s 1 linear;
+        }
+      }
+    }
+  }
+  @keyframes press {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.92);
+    }
+    to {
+      transform: scale(1);
     }
   }
 }
@@ -1107,6 +1240,11 @@ canvas {
     height: 32px;
     width: 32px;
     margin: 0 10px;
+    cursor: pointer;
+    &:hover {
+      filter: invert(52%) sepia(40%) saturate(945%) hue-rotate(148deg)
+        brightness(94%) contrast(100%);
+    }
   }
 }
 .logo-home {
@@ -1115,6 +1253,11 @@ canvas {
   left: 40px;
   .logo-home-icon {
     height: 60px;
+  }
+  cursor: pointer;
+  &:hover {
+    filter: invert(52%) sepia(40%) saturate(945%) hue-rotate(148deg)
+      brightness(94%) contrast(100%);
   }
 }
 .hint {
@@ -1148,5 +1291,15 @@ canvas {
   img {
     width: 60px;
   }
+}
+.CelebBuy {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 10vh;
+  margin-left: auto;
+  margin-right: auto;
+  width: 70vw;
+  z-index: 100;
 }
 </style>

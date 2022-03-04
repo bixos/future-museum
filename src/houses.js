@@ -7,6 +7,7 @@ export default [
     floors: "2",
     m2: "250",
     owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -16,6 +17,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -25,6 +27,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -34,6 +37,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -43,6 +47,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -52,6 +57,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -61,6 +67,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -70,6 +77,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -79,6 +87,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -88,6 +97,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -97,6 +107,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -106,6 +117,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -115,6 +127,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -124,6 +137,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -133,6 +147,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -142,6 +157,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -151,6 +167,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -160,6 +177,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -169,6 +187,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -178,6 +197,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -187,6 +207,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -196,6 +217,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -205,6 +227,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -214,6 +237,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -223,6 +247,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -232,6 +257,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -241,6 +267,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -250,6 +277,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -259,6 +287,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -268,6 +297,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -277,6 +307,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -286,6 +317,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -295,6 +327,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -304,6 +337,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -313,6 +347,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -322,6 +357,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -331,6 +367,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -340,6 +377,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -349,6 +387,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -358,6 +397,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -367,6 +407,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -376,6 +417,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -385,6 +427,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -394,6 +437,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -403,6 +447,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -412,6 +457,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -421,6 +467,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -430,6 +477,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -439,6 +487,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -448,6 +497,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -457,6 +507,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -466,6 +517,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -475,6 +527,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -484,6 +537,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -493,6 +547,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -502,6 +557,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -511,6 +567,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -520,6 +577,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -529,6 +587,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -538,6 +597,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -547,6 +607,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -556,6 +617,7 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
   {
     id: 1,
@@ -565,5 +627,6 @@ export default [
     floors: "2",
     m2: "300",
     Owner: "Bixos INC",
+    sold: false,
   },
 ];
