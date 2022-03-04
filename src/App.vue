@@ -428,6 +428,21 @@
     >
       <span>Reset</span>
     </div>
+    <div
+      style="
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -o-user-select: none;
+      "
+      unselectable="on"
+      @click="requestFullScreen()"
+      v-if="deviceType() !== 'desktop'"
+      class="full-button"
+    >
+      <span>Full Screen</span>
+    </div>
   </div>
 </template>
 
@@ -488,6 +503,19 @@ export default defineComponent({
     const run = ref(false);
     const hitSound = new Audio(require("./assets/AudioBuy.mp3"));
 
+    function requestFullScreen() {
+      var element = document.documentElement; // Make the body go full screen.
+      var requestMethod =
+        element.requestFullScreen ||
+        element.webkitRequestFullScreen ||
+        element.mozRequestFullScreen ||
+        element.msRequestFullScreen;
+
+      if (requestMethod) {
+        // Native full screen.
+        requestMethod.call(element);
+      }
+    }
     const buyHouse = () => {
       var material2 = currentIntersect.children[1].material.clone();
       material2.color = new THREE.Color(0xff0000);
@@ -1246,6 +1274,8 @@ export default defineComponent({
       balance,
       buyHouse,
       sellHouse,
+
+      requestFullScreen,
       deviceType,
       interact,
       reset,
@@ -1749,7 +1779,7 @@ canvas {
 .home-details-button {
   position: absolute;
   right: 20px;
-  bottom: 90px;
+  bottom: 140px;
   padding: 10px 20px;
   border-radius: 6px;
   background: white;
@@ -1769,6 +1799,25 @@ canvas {
   position: absolute;
   right: 20px;
   bottom: 40px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  background: white;
+  color: #0ca6d7;
+  font-weight: bold;
+  font-size: 20px;
+  line-height: 20px;
+  background: #ffffff;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
+  &:active {
+    animation: press 0.2s 1 linear;
+  }
+}
+.full-button {
+  position: absolute;
+  right: 20px;
+  bottom: 90px;
   padding: 10px 20px;
   border-radius: 6px;
   background: white;
