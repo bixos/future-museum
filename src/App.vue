@@ -682,7 +682,7 @@ export default defineComponent({
           tempVector.set(0, 0, -1).applyAxisAngle(upVector, angle);
           player.position.addScaledVector(
             tempVector,
-            params.playerSpeed * delta * speedAngle.up
+            (params.playerSpeed * delta * speedAngle.up) / 2
           );
         }
 
@@ -690,7 +690,7 @@ export default defineComponent({
           tempVector.set(0, 0, 1).applyAxisAngle(upVector, angle);
           player.position.addScaledVector(
             tempVector,
-            params.playerSpeed * delta * speedAngle.down
+            (params.playerSpeed * delta * speedAngle.down) / 2
           );
         }
 
@@ -698,7 +698,7 @@ export default defineComponent({
           tempVector.set(-1, 0, 0).applyAxisAngle(upVector, angle);
           player.position.addScaledVector(
             tempVector,
-            params.playerSpeed * delta * speedAngle.left
+            (params.playerSpeed * delta * speedAngle.left) / 2
           );
         }
 
@@ -706,7 +706,7 @@ export default defineComponent({
           tempVector.set(1, 0, 0).applyAxisAngle(upVector, angle);
           player.position.addScaledVector(
             tempVector,
-            params.playerSpeed * delta * speedAngle.right
+            (params.playerSpeed * delta * speedAngle.right) / 2
           );
         }
       } else {
