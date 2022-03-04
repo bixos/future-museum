@@ -1367,7 +1367,7 @@ canvas {
   margin-right: auto;
   top: calc((100vh - 533px) / 2);
   @media only screen and (max-width: 1250px) {
-    top: 20vh;
+    top: 15vh;
   }
   .close-icon {
     position: absolute;
@@ -1421,6 +1421,8 @@ canvas {
         max-width: 100%;
         @media only screen and (max-width: 1024px) {
           padding-top: 15px;
+          max-height: 30vh;
+          overflow-y: scroll;
         }
         .row {
           display: flex;
