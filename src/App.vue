@@ -1013,7 +1013,6 @@ export default defineComponent({
             params.playerSpeed * delta * speedAngle.left
           );
         }
-
         if (keyStates.KeyD) {
           tempVector.set(1, 0, 0).applyAxisAngle(upVector, angle);
           player.position.addScaledVector(
