@@ -489,8 +489,6 @@ export default defineComponent({
     const hitSound = new Audio(require("./assets/AudioBuy.mp3"));
 
     const buyHouse = () => {
-      console.log("currentIntersect.name :>> ");
-      console.log("currentIntersect :>> ", currentIntersect);
       var material2 = currentIntersect.children[1].material.clone();
       material2.color = new THREE.Color(0xff0000);
       currentIntersect.children[1].material = material2;
@@ -821,7 +819,6 @@ export default defineComponent({
             signs.push(c);
           }
         });
-        console.log("signs :>> ", signs);
         const geometries = [];
         gltfScene.updateMatrixWorld(true);
         gltfScene.traverse((c) => {
