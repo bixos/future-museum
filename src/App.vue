@@ -1,15 +1,25 @@
 <template>
   <div>
     <div class="joystick-container" ref="joystick"></div>
-    <div v-if="loading" class="overlay">
+    <div
+      v-if="loading"
+      class="overlay"
+      ref="overlayElement"
+      :class="
+        deviceType() === 'desktop'
+          ? 'desktop-background-loading'
+          : 'mobile-background-loading'
+      "
+    >
       <img
-        src="./assets/icons/Bixos-light-text.svg"
-        class="logo-home-icon"
-        alt="logo-home"
+        src="./assets/loading-text.png"
+        class="loading-text"
+        alt="loading-text"
       />
-      <div class="loading-bar" ref="loadingBarElement"></div>
-      <span>LOADING</span>
-      <div style="height: 140px"></div>
+      <div class="loading-bar-container">
+        <div class="loading-bar" ref="loadingBarElement"></div>
+        <span class="loading-span">LOADING</span>
+      </div>
     </div>
     <div v-if="houseDetails" class="house-wraper"></div>
     <div v-if="houseDetails" class="house-details">
@@ -126,10 +136,19 @@
         </div>
         <span class="walk-hint"> Walk </span>
       </div>
-      <div class="key key-mouse">
-        <img src="./assets/icons/Mouse.svg" class="mouse" alt="mouse" />
-
-        <span class="look-hint"> Look </span>
+      <div>
+        <div style="display: flex; align-items: center">
+          <div class="key key-mouse">
+            <img src="./assets/icons/Mouse.svg" class="mouse" alt="mouse" />
+          </div>
+          <span class="right-hint"> Look </span>
+        </div>
+        <div style="display: flex; align-items: center">
+          <div class="key key-mouse">
+            <span>R</span>
+          </div>
+          <span class="right-hint"> Restart </span>
+        </div>
       </div>
     </div>
     <div v-if="deviceType() === 'desktop'" class="social-media">
@@ -190,6 +209,21 @@
     >
       <span>Open</span>
     </div>
+    <div
+      style="
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        -o-user-select: none;
+      "
+      unselectable="on"
+      @click="reset()"
+      v-if="deviceType() !== 'desktop'"
+      class="reset-button"
+    >
+      <span>Reset</span>
+    </div>
   </div>
 </template>
 
@@ -230,6 +264,7 @@ export default defineComponent({
     const container = ref({});
     const joystick = ref({});
     const loadingBarElement = ref({});
+    const overlayElement = ref({});
     const loading = ref(true);
     const houseDetails = ref(false);
     const house = ref({});
@@ -299,11 +334,11 @@ export default defineComponent({
       mouse.y = -(_event.clientY / window.innerHeight) * 2 + 1;
     });
 
-    window.addEventListener("click", (_event) => {
-      if (currentIntersect) {
-        console.log("clic :>> ");
-      }
-    });
+    // window.addEventListener("click", (_event) => {
+    //   if (currentIntersect) {
+    //     console.log("clic :>> ");
+    //   }
+    // });
     let playerIsOnGround = false;
     let fwdPressed = false,
       bkdPressed = false,
@@ -319,6 +354,9 @@ export default defineComponent({
 
     const loadingManager = new THREE.LoadingManager(
       () => {
+        overlayElement.value.classList.add("ended");
+        camera.position.add(player.position);
+        controls.update();
         gsap
           .timeline({
             paused: false,
@@ -328,8 +366,7 @@ export default defineComponent({
           .then(() => {
             loading.value = false;
           });
-        loadingBarElement.value.classList.add("ended");
-        loadingBarElement.value.style.transform = "";
+        // loadingBarElement.value.style.transform = "";
       },
       (itemUrl, itemsLoaded, itemsTotal) => {
         const progressRatio = itemsLoaded / itemsTotal;
@@ -513,7 +550,7 @@ export default defineComponent({
           ),
         };
         scene.add(player);
-        player.position.set(0, 100, -150);
+        player.position.set(0, 100, 120);
 
         // map
         const gltfScene = res.scene;
@@ -538,8 +575,6 @@ export default defineComponent({
             houses.push(c);
           }
           if (c.name.indexOf("area") !== -1) {
-            console.log("houses :>> ", housesData[0]);
-            console.log("buyArea.length :>> ", buyArea.length);
             c.userData.house = housesData[buyArea.length];
             buyArea.push(c);
           }
@@ -554,7 +589,7 @@ export default defineComponent({
             c.name.indexOf("token") !== -1 ||
             (c.parent && c.parent.name.indexOf("token") !== -1)
           ) {
-            console.log("c :>> ", c);
+            return;
           } else if (c.geometry && c.name !== "cloud") {
             const cloned = c.geometry.clone();
             cloned.applyMatrix4(c.matrixWorld);
@@ -649,6 +684,9 @@ export default defineComponent({
           case "Enter":
             interact();
             break;
+          case "KeyR":
+            reset();
+            break;
         }
       });
     }
@@ -657,16 +695,14 @@ export default defineComponent({
       if (currentIntersect && currentIntersect.name.indexOf("area") !== -1) {
         house.value = currentIntersect.userData.house;
         houseDetails.value = true;
-        console.log("currentIntersect.object :>> ", currentIntersect.object);
-        // userData
       }
     }
 
     function reset() {
       playerVelocity.set(0, 0, 0);
       player.position.set(0, 100, 120);
-      camera.position.sub(controls.target);
-      controls.target.copy(player.position);
+      // camera.position.sub(controls.target);
+      // controls.target.copy(player.position);
       camera.position.add(player.position);
       controls.update();
     }
@@ -877,10 +913,7 @@ export default defineComponent({
       }
       if (intersects.length) {
         if (!currentIntersect) {
-          console.log("mouse enter:>> ");
-
           currentIntersect = intersects[0].object.parent;
-          console.log("intersects :>> ", intersects);
         }
         currentIntersect = intersects[0].object.parent;
         if (currentIntersect.name.indexOf("area") !== -1) {
@@ -900,7 +933,6 @@ export default defineComponent({
         }
       } else {
         if (currentIntersect) {
-          console.log("mouse leave:>> ");
           prevIntersect = currentIntersect;
         }
         currentIntersect = null;
@@ -915,7 +947,7 @@ export default defineComponent({
       if (mixer) {
         mixer.update(clock.getDelta());
       }
-      controls.update();
+      // controls.update();
       renderer.render(scene, camera);
     }
     return {
@@ -923,6 +955,7 @@ export default defineComponent({
       joystick,
       loading,
       loadingBarElement,
+      overlayElement,
       houseDetails,
       house,
       interactHint,
@@ -932,6 +965,7 @@ export default defineComponent({
       sellHouse,
       deviceType,
       interact,
+      reset,
     };
   },
 });
@@ -971,45 +1005,7 @@ canvas {
   width: 100px;
   height: 100px;
 }
-.overlay {
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-  position: absolute;
-  opacity: 1;
-  z-index: 999;
-  background: #239eda;
-  top: 0;
-  left: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  img {
-    max-width: 90vw;
-  }
-  span {
-    color: white;
-    font-size: 30px;
-    line-height: 37px;
-    margin-top: 100px;
-  }
-}
-.loading-bar {
-  position: absolute;
-  top: 50%;
-  width: 100%;
-  height: 2px;
-  background: #ffffff;
-  transform: scaleX(0);
-  transform-origin: top left;
-  transition: transform 0.5s;
-}
-.loading-bar.ended {
-  transform: scaleX(0);
-  transform-origin: 100% 0;
-  transition: transform 1.5s ease-in-out;
-}
+
 .house-wraper {
   position: absolute;
   width: 100vw;
@@ -1027,7 +1023,7 @@ canvas {
   margin-right: auto;
   top: calc((100vh - 533px) / 2);
   @media only screen and (max-width: 1250px) {
-    top: 13vh;
+    top: 20vh;
   }
   .close-icon {
     position: absolute;
@@ -1210,7 +1206,7 @@ canvas {
   @media only screen and (max-width: 1024px) {
     width: 140px;
     height: 30px;
-    right: 40px;
+    right: 20px;
     top: 20px;
     font-size: 15px;
   }
@@ -1229,9 +1225,9 @@ canvas {
     height: 32px;
     width: 32px;
     @media only screen and (max-width: 1024px) {
+      height: 16px;
+      width: 16px;
     }
-    height: 16px;
-    width: 16px;
   }
 }
 
@@ -1249,9 +1245,8 @@ canvas {
     font-weight: normal;
     color: #ffffff;
   }
-  .look-hint {
-    position: absolute;
-    bottom: -30px;
+  .right-hint {
+    margin-left: 20px;
     font-style: normal;
     font-weight: normal;
     font-size: 20px;
@@ -1309,7 +1304,7 @@ canvas {
   top: 40px;
   left: 40px;
   @media only screen and (max-width: 1024px) {
-    left: 40px;
+    left: 20px;
     top: 20px;
   }
   .logo-home-icon {
@@ -1367,7 +1362,26 @@ canvas {
 }
 .home-details-button {
   position: absolute;
-  right: 40px;
+  right: 20px;
+  bottom: 90px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  background: white;
+  color: #0ca6d7;
+  font-weight: bold;
+  font-size: 20px;
+  line-height: 20px;
+  background: #ffffff;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
+  &:active {
+    animation: press 0.2s 1 linear;
+  }
+}
+.reset-button {
+  position: absolute;
+  right: 20px;
   bottom: 40px;
   padding: 10px 20px;
   border-radius: 6px;
@@ -1383,5 +1397,86 @@ canvas {
   &:active {
     animation: press 0.2s 1 linear;
   }
+}
+
+.desktop-background-loading {
+  background-image: url("./assets/citybackground2.jpg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  .loading-text {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+  .loading-bar-container {
+    top: auto;
+    right: 30vh;
+    bottom: 30vh;
+  }
+}
+.mobile-background-loading {
+  background-image: url("./assets/a2mobileb.jpg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  .loading-text {
+    max-width: 100vw;
+  }
+}
+.overlay {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: absolute;
+  opacity: 1;
+  z-index: 999999999;
+  top: 0;
+  left: 0;
+  filter: blur(0);
+  img {
+    max-width: 90vw;
+  }
+}
+.loading-bar-container {
+  border: #239eda 6px solid;
+  border-radius: 20px;
+  z-index: 2;
+  position: absolute;
+  top: 50%;
+  height: 50px;
+  width: 255px;
+  .loading-span {
+    position: absolute;
+    top: 10px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    font-weight: 900;
+    font-size: 30px;
+    text-align: center;
+    color: #ffffff;
+  }
+}
+.loading-bar {
+  position: absolute;
+  top: 0;
+  background-image: url("./assets/loading-bar.png");
+  height: 50px;
+  width: 255px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  // background: #ffffff;
+  transform: scaleX(0);
+  transform-origin: top left;
+  transition: transform 0.5s;
+}
+.overlay.ended {
+  filter: blur(1.5rem);
+  transition: filter 1s ease-in-out;
 }
 </style>
