@@ -1,4 +1,4 @@
-# ubxs-village.
+# ubxs-village
 
 ## Project setup
 ```
