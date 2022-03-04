@@ -428,7 +428,7 @@
     >
       <span>Reset</span>
     </div>
-    <div
+    <!-- <div
       style="
         -moz-user-select: none;
         -webkit-user-select: none;
@@ -442,7 +442,7 @@
       class="full-button"
     >
       <span>Full Screen</span>
-    </div>
+    </div> -->
   </div>
 </template>
 
