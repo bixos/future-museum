@@ -29,6 +29,7 @@
         class="close-icon"
         alt="Close"
       />
+
       <div class="house-details-container">
         <div class="house-header">
           <img src="./assets/house.png" class="house-img" alt="house" />
@@ -42,21 +43,163 @@
             <span>{{ house.price.toLocaleString("es-ES") }}</span>
           </div>
         </div>
+        <div class="tabs">
+          <div
+            style="width: 30%"
+            class="tab"
+            @click="activeTab = 1"
+            :class="activeTab === 1 ? 'active-tab' : ''"
+          >
+            <span class="tab-text">General</span>
+          </div>
+          <div
+            style="width: 40%"
+            class="tab"
+            @click="activeTab = 2"
+            :class="activeTab === 2 ? 'active-tab' : ''"
+          >
+            <span class="tab-text">Interior Detail</span>
+          </div>
+          <div
+            style="width: 30%"
+            class="tab"
+            @click="activeTab = 3"
+            :class="activeTab === 3 ? 'active-tab' : ''"
+          >
+            <span class="tab-text">Extra</span>
+          </div>
+        </div>
         <div class="house-body">
-          <div class="house-features">
-            <div class="details-label">
-              <p>Nummber of Rooms</p>
-              <p>Building age</p>
-              <p>Number of Floors</p>
-              <p>M2</p>
-              <p>Owner</p>
+          <div class="house-features" v-if="activeTab === 1">
+            <div class="row row-dark">
+              <div class="details-label">
+                <p>Listing No</p>
+              </div>
+              <div
+                class="details-value"
+                style="font-weight: 900; color: #239eda"
+              >
+                <p>: {{ house.number }}</p>
+              </div>
             </div>
-            <div class="details-value">
-              <p>: {{ house.rooms }}</p>
-              <p>: {{ house.age }}</p>
-              <p>: {{ house.floors }}</p>
-              <p>: {{ house.m2 }}</p>
-              <p>: {{ house.Owner }}</p>
+            <div class="row">
+              <div class="details-label">
+                <p>Announcement Date</p>
+              </div>
+              <div class="details-value">
+                <p>: {{ house.date }}</p>
+              </div>
+            </div>
+            <div class="row row-dark">
+              <div class="details-label">
+                <p>Property Type</p>
+              </div>
+              <div class="details-value">
+                <p>: {{ house.type }}</p>
+              </div>
+            </div>
+            <div class="row">
+              <div class="details-label">
+                <p>m² (Gross)</p>
+              </div>
+              <div class="details-value">
+                <p>: {{ house.m2 }}</p>
+              </div>
+            </div>
+            <div class="row row-dark">
+              <div class="details-label">
+                <p>Building Age</p>
+              </div>
+              <div class="details-value">
+                <p>: {{ house.age }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="house-features" v-if="activeTab === 2">
+            <div class="row row-dark">
+              <div class="details-label">
+                <p>Number of Rooms</p>
+              </div>
+              <div class="details-value">
+                <p>: {{ house.rooms }}</p>
+              </div>
+            </div>
+            <div class="row">
+              <div class="details-label">
+                <p>Number of Floors</p>
+              </div>
+              <div class="details-value">
+                <p>: {{ house.floors }}</p>
+              </div>
+            </div>
+            <div class="row row-dark">
+              <div class="details-label">
+                <p>Heating</p>
+              </div>
+              <div class="details-value">
+                <p>: {{ house.heating }}</p>
+              </div>
+            </div>
+            <div class="row">
+              <div class="details-label">
+                <p>Number of Bathrooms</p>
+              </div>
+              <div class="details-value">
+                <p>: {{ house.bathrooms }}</p>
+              </div>
+            </div>
+            <div class="row row-dark">
+              <div class="details-label">
+                <p>Furnished</p>
+              </div>
+              <div class="details-value">
+                <p>: {{ house.furnished }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="house-features" v-if="activeTab === 3">
+            <div class="row row-dark">
+              <div class="details-label">
+                <p>Usage Status</p>
+              </div>
+              <div class="details-value">
+                <p>: {{ house.status }}</p>
+              </div>
+            </div>
+            <div class="row">
+              <div class="details-label">
+                <p>Inside Cite</p>
+              </div>
+              <div class="details-value">
+                <p>: {{ house.cite }}</p>
+              </div>
+            </div>
+            <div class="row row-dark">
+              <div class="details-label">
+                <p>Dues (TL)</p>
+              </div>
+              <div class="details-value">
+                <p>: {{ house.dues }}</p>
+              </div>
+            </div>
+            <div class="row">
+              <div class="details-label">
+                <p>Deed Status</p>
+              </div>
+              <div class="details-value">
+                <p>: {{ house.deed }}</p>
+              </div>
+            </div>
+            <div class="row row-dark">
+              <div class="details-label">
+                <p>From</p>
+              </div>
+              <div
+                class="details-value"
+                style="font-weight: 900; color: #239eda"
+              >
+                <p>: {{ house.Owner }}</p>
+              </div>
             </div>
           </div>
           <button
@@ -66,14 +209,14 @@
             :class="house.price > balance ? 'disabled-buy-buttom' : ''"
             class="buy-house-button"
           >
-            Buy
+            Buy as NFT
           </button>
           <button
             @click="sellHouse"
             v-if="house.sold"
             class="sell-house-button"
           >
-            Sell
+            Sell as NFT
           </button>
         </div>
       </div>
@@ -89,11 +232,13 @@
     ></lottie-player>
 
     <div v-if="deviceType() === 'desktop'" class="logo-home">
-      <img
-        src="./assets/icons/Bixos-light-text.svg"
-        class="logo-home-icon"
-        alt="logo-home"
-      />
+      <a href="https://bixos.io/" target="_blank" rel="noopener noreferrer">
+        <img
+          src="./assets/icons/Bixos-light-text.svg"
+          class="logo-home-icon"
+          alt="logo-home"
+        />
+      </a>
     </div>
     <div v-else class="logo-home">
       <img
@@ -118,9 +263,11 @@
       <div class="nav">
         <div v-for="link in links" :key="link.path" class="linksContainer">
           <img :src="link.icon" class="link-icon" alt="link-icon" />
-          <router-link class="link" :to="link.path">{{
-            link.title
-          }}</router-link>
+          <router-link class="link" :to="link.path">
+            <a :href="link.link" target="_blank">{{
+              link.title
+            }}</a></router-link
+          >
         </div>
       </div>
     </Drawer>
@@ -189,34 +336,51 @@
           </div>
           <span class="right-hint"> Restart </span>
         </div>
+        <div style="display: flex; align-items: center">
+          <div class="key left-key">
+            <span>Shift</span>
+          </div>
+          <span class="right-hint"> Run </span>
+        </div>
       </div>
     </div>
     <div v-if="deviceType() === 'desktop'" class="social-media">
-      <img
-        src="./assets/icons/Telegram.svg"
-        class="social-media-icon"
-        alt="telegram"
-      />
-      <img
-        src="./assets/icons/Discord.svg"
-        class="social-media-icon"
-        alt="discord"
-      />
-      <img
-        src="./assets/icons/Twitter.svg"
-        class="social-media-icon"
-        alt="twitter"
-      />
-      <img
-        src="./assets/icons/LinkedIn.svg"
-        class="social-media-icon"
-        alt="linkedin"
-      />
-      <img
-        src="./assets/icons/Instagram.svg"
-        class="social-media-icon"
-        alt="instagram"
-      />
+      <a href="https://t.me/ubxscommunity" target="_blank">
+        <img
+          src="./assets/icons/Telegram.svg"
+          class="social-media-icon"
+          alt="telegram"
+        />
+      </a>
+      <a href="https://discord.io/ubxs" target="_blank">
+        <img
+          src="./assets/icons/Discord.svg"
+          class="social-media-icon"
+          alt="discord"
+        />
+      </a>
+      <a href="https://twitter.com/Bixosinc" target="_blank">
+        <img
+          src="./assets/icons/Twitter.svg"
+          class="social-media-icon"
+          alt="twitter"
+        />
+      </a>
+      <a href="https://www.linkedin.com/company/bixosinc/" target="_blank">
+        <img
+          src="./assets/icons/LinkedIn.svg"
+          class="social-media-icon"
+          alt="linkedin"
+        />
+      </a>
+
+      <a href="https://www.instagram.com/bixosinc" target="_blank">
+        <img
+          src="./assets/icons/Instagram.svg"
+          class="social-media-icon"
+          alt="instagram"
+        />
+      </a>
     </div>
 
     <div
@@ -318,11 +482,25 @@ export default defineComponent({
     const houseDetails = ref(false);
     const house = ref({});
     const balance = ref(1000000);
-    const interactHint = ref(true);
+    const interactHint = ref(false);
     const celebrate = ref(false);
+    const activeTab = ref(1);
+    const run = ref(false);
     const hitSound = new Audio(require("./assets/AudioBuy.mp3"));
 
     const buyHouse = () => {
+      console.log("currentIntersect.name :>> ");
+      console.log("currentIntersect :>> ", currentIntersect);
+      var material2 = currentIntersect.children[1].material.clone();
+      material2.color = new THREE.Color(0xff0000);
+      currentIntersect.children[1].material = material2;
+      const number = currentIntersect.name.replace(/^\D+/g, "");
+      const sign = signs.find((sign) => {
+        const signNumber = sign.name.replace(/^\D+/g, "");
+        return number === signNumber;
+      });
+      signToFlip = sign;
+
       house.value.sold = true;
       house.value.Owner = "You";
       houseDetails.value = false;
@@ -337,6 +515,16 @@ export default defineComponent({
       }, 3000);
     };
     const sellHouse = () => {
+      var material2 = currentIntersect.children[1].material.clone();
+      material2.color = new THREE.Color(0x1edaff);
+      currentIntersect.children[1].material = material2;
+      const number = currentIntersect.name.replace(/^\D+/g, "");
+
+      const sign = signs.find((sign) => {
+        const signNumber = sign.name.replace(/^\D+/g, "");
+        return number === signNumber;
+      });
+      signToFlip = sign;
       house.value.sold = false;
       house.value.Owner = "Bixos Inc";
       houseDetails.value = false;
@@ -377,6 +565,8 @@ export default defineComponent({
     let prevIntersect = null;
     const houses = [];
     const buyArea = [];
+    const signs = [];
+    let signToFlip = {};
 
     window.addEventListener("mousemove", (_event) => {
       mouse.x = (_event.clientX / window.innerWidth) * 2 - 1;
@@ -627,7 +817,11 @@ export default defineComponent({
             c.userData.house = housesData[buyArea.length];
             buyArea.push(c);
           }
+          if (c.name.indexOf("Sign") !== -1) {
+            signs.push(c);
+          }
         });
+        console.log("signs :>> ", signs);
         const geometries = [];
         gltfScene.updateMatrixWorld(true);
         gltfScene.traverse((c) => {
@@ -707,11 +901,13 @@ export default defineComponent({
           case "KeyA":
             lftPressed = true;
             break;
+          case "ShiftLeft":
+            run.value = true;
+            break;
           case "Space":
             if (playerIsOnGround) {
               playerVelocity.y = 10.0;
             }
-
             break;
         }
       });
@@ -729,6 +925,9 @@ export default defineComponent({
             break;
           case "KeyA":
             lftPressed = false;
+            break;
+          case "ShiftLeft":
+            run.value = false;
             break;
           case "Enter":
             interact();
@@ -795,12 +994,16 @@ export default defineComponent({
           );
         }
       } else {
+        let speedMultiplier = 1;
+        if (run.value) {
+          speedMultiplier = 2.5;
+        }
         const angle = controls.getAzimuthalAngle();
         if (fwdPressed) {
           tempVector.set(0, 0, -1).applyAxisAngle(upVector, angle);
           player.position.addScaledVector(
             tempVector,
-            params.playerSpeed * delta
+            params.playerSpeed * delta * speedMultiplier
           );
         }
 
@@ -808,7 +1011,7 @@ export default defineComponent({
           tempVector.set(0, 0, 1).applyAxisAngle(upVector, angle);
           player.position.addScaledVector(
             tempVector,
-            params.playerSpeed * delta
+            params.playerSpeed * delta * speedMultiplier
           );
         }
 
@@ -816,7 +1019,7 @@ export default defineComponent({
           tempVector.set(-1, 0, 0).applyAxisAngle(upVector, angle);
           player.position.addScaledVector(
             tempVector,
-            params.playerSpeed * delta
+            params.playerSpeed * delta * speedMultiplier
           );
         }
 
@@ -824,7 +1027,7 @@ export default defineComponent({
           tempVector.set(1, 0, 0).applyAxisAngle(upVector, angle);
           player.position.addScaledVector(
             tempVector,
-            params.playerSpeed * delta
+            params.playerSpeed * delta * speedMultiplier
           );
         }
       }
@@ -996,6 +1199,10 @@ export default defineComponent({
       if (mixer) {
         mixer.update(clock.getDelta());
       }
+      if (signToFlip && signToFlip.rotation) {
+        signToFlip.rotation.y -= Math.PI;
+        signToFlip = {};
+      }
       // controls.update();
       renderer.render(scene, camera);
     }
@@ -1015,6 +1222,7 @@ export default defineComponent({
       deviceType,
       interact,
       reset,
+      activeTab,
     };
   },
   data() {
@@ -1024,26 +1232,32 @@ export default defineComponent({
         {
           icon: BixosLight,
           title: "Bixos.io",
+          link: "https://bixos.io/",
         },
         {
           icon: Telegram,
           title: "Telegram",
+          link: "https://t.me/ubxscommunity",
         },
         {
           icon: Discord,
           title: "Discord",
+          link: "https://discord.io/ubxs",
         },
         {
           icon: Twitter,
           title: "Twitter",
+          link: "https://twitter.com/Bixosinc",
         },
         {
           icon: LinkedIn,
           title: "LinkedIn",
+          link: "https://www.linkedin.com/company/bixosinc/",
         },
         {
           icon: Instagram,
           title: "Instagram",
+          link: "https://www.instagram.com/bixosinc",
         },
       ],
     };
@@ -1115,9 +1329,10 @@ canvas {
   background: rgba(37, 55, 70, 0.75);
 }
 .house-details {
-  width: 360px;
+  width: 400px;
   height: 533px;
   max-height: 87vh;
+  max-width: 90vw;
   position: absolute;
   left: 0;
   right: 0;
@@ -1139,12 +1354,13 @@ canvas {
     }
   }
   .house-details-container {
-    height: 480px;
+    height: 600px;
     max-height: 83vh;
+    max-width: 90vw;
     width: 100%;
     .house-header {
       background: #68c2c4;
-      height: 40%;
+      height: 33%;
       width: 100%;
       border-top-left-radius: 35px;
       border-top-right-radius: 35px;
@@ -1176,13 +1392,16 @@ canvas {
       justify-content: space-between;
       .house-features {
         max-width: 100%;
-        display: flex;
-        justify-content: space-between;
-        padding-top: 30px;
-        padding-left: 40px;
-        padding-right: 40px;
         @media only screen and (max-width: 1024px) {
           padding-top: 15px;
+        }
+        .row {
+          display: flex;
+
+          padding: 15px 40px;
+        }
+        .row-dark {
+          background: #f2f2f2;
         }
         p {
           margin: 0;
@@ -1191,18 +1410,19 @@ canvas {
           font-size: 16px;
           line-height: 24px;
           color: #627d93;
+          width: 60%;
         }
         .details-value {
-          font-weight: 900;
           font-size: 16px;
           line-height: 24px;
-          color: #239eda;
+          color: #627d93;
+          width: 40%;
         }
       }
       .buy-house-button {
         margin-left: 40px;
         margin-right: 40px;
-        margin-bottom: 40px;
+        margin-bottom: 20px;
         @media only screen and (max-width: 1024px) {
           margin-bottom: 20px;
         }
@@ -1271,6 +1491,30 @@ canvas {
         }
       }
     }
+    .tabs {
+      height: 10%;
+      // width: 100%;
+      max-width: 100%;
+      background: #215670;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 17px;
+      .tab {
+        font-weight: 900;
+        font-size: 16px;
+        // line-height: 19px;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        max-height: 60px;
+        width: 100%;
+        color: #ffffff;
+        cursor: pointer;
+      }
+    }
   }
   @keyframes press {
     0% {
@@ -1282,6 +1526,12 @@ canvas {
     to {
       transform: scale(1);
     }
+  }
+}
+.active-tab {
+  border-bottom: #68c2c4 4px solid;
+  .tab-text {
+    color: #68c2c4;
   }
 }
 
@@ -1362,6 +1612,7 @@ canvas {
   height: 50px;
   width: 100%;
 }
+
 .key {
   display: flex;
   flex-direction: column;
@@ -1377,6 +1628,9 @@ canvas {
   line-height: 20px;
   background: #ffffff;
   font-weight: bold;
+}
+.left-key {
+  width: 100px;
 }
 .key-mouse {
   margin-left: 30px;
@@ -1529,6 +1783,10 @@ canvas {
   .loading-text {
     max-width: 100vw;
   }
+  .loading-bar-container {
+    top: auto;
+    bottom: 10vh;
+  }
 }
 .overlay {
   width: 100vw;
@@ -1546,15 +1804,17 @@ canvas {
 }
 .loading-bar-container {
   border: #239eda 6px solid;
+  background: #1c7eae;
   border-radius: 20px;
   z-index: 2;
   position: absolute;
   top: 50%;
+
   height: 50px;
   width: 255px;
   .loading-span {
     position: absolute;
-    top: 10px;
+    top: 8px;
     width: 100%;
     margin-left: auto;
     margin-right: auto;
