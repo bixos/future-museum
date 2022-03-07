@@ -462,7 +462,7 @@ import {
   // AVERAGE,
   MeshBVH,
 } from "three-mesh-bvh";
-import Stats from "stats.js";
+// import Stats from "stats.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 
@@ -813,8 +813,8 @@ export default defineComponent({
       controls = new OrbitControls(camera, renderer.domElement);
 
       // stats setup
-      stats = new Stats();
-      document.body.appendChild(stats.dom);
+      // stats = new Stats();
+      // document.body.appendChild(stats.dom);
 
       window.addEventListener(
         "resize",
@@ -1171,7 +1171,7 @@ export default defineComponent({
     }
     let up = true;
     function render() {
-      stats.update();
+      // stats.update();
       requestAnimationFrame(render);
 
       const delta = Math.min(clock.getDelta(), 0.1);
