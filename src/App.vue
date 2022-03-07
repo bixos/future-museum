@@ -632,6 +632,8 @@ export default defineComponent({
             loading.value = false;
           });
         // loadingBarElement.value.style.transform = "";
+        renderer.shadowMap.autoUpdate = false;
+        renderer.shadowMap.needsUpdate = true;
       },
       (itemUrl, itemsLoaded, itemsTotal) => {
         const progressRatio = itemsLoaded / itemsTotal;
@@ -753,43 +755,23 @@ export default defineComponent({
       light.position.set(0, 1, -0.025);
       light.position.multiplyScalar(50);
 
-      // light.shadow.camera.far = 15;
-      // light.shadow.mapSize.set(1024, 1024);
+      light.shadow.camera.far = 90;
+      light.shadow.mapSize.set(1024, 1024);
       light.shadowMapWidth = light.shadowMapHeight = 1024 * 2;
       light.castShadow = true;
-      // light.shadow.mapSize.width = 512; // default
-      // light.shadow.mapSize.height = 512; // default
-      light.shadow.camera.near = 0.5; // default
-      light.shadow.camera.far = 500;
-      var d = 300;
 
-      light.shadowCameraLeft = -d;
-      light.shadowCameraRight = d;
-      light.shadowCameraTop = d;
-      light.shadowCameraBottom = -d;
+      light.shadowCameraLeft = -200;
+      light.shadowCameraRight = 200;
+      light.shadowCameraTop = 150;
+      light.shadowCameraBottom = -300;
 
-      light.shadowCameraFar = 3500;
       light.shadowBias = -0.0001;
-      light.shadowDarkness = 0.35;
-      light.shadow.normalBias = 0.05;
+      light.shadowDarkness = 3.5;
+      light.shadow.normalBias = 0.5;
       scene.add(light);
 
       // const helper = new THREE.CameraHelper(light.shadow.camera);
       // scene.add(helper);
-      // const helper = new THREE.DirectionalLightHelper(light, 5);
-      // scene.add(helper);
-
-      const pointLight = new THREE.PointLight(0xffffff, 0.4, 20);
-      pointLight.position.set(0, 10, -170);
-      scene.add(pointLight);
-      // pointLight.castShadow = true;
-
-      // const sphereSize = 1;
-      // const pointLightHelper = new THREE.PointLightHelper(
-      //   pointLight,
-      //   sphereSize
-      // );
-      // scene.add(pointLightHelper);
 
       var hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
       hemiLight.color.setHSL(0.6, 0.75, 0.5);
@@ -829,7 +811,7 @@ export default defineComponent({
     }
 
     function loadColliderEnvironment() {
-      gltfLoader.load("/models/palmmap.glb", (res) => {
+      gltfLoader.load("/models/palmmap2.glb", (res) => {
         // character
         player = new THREE.Mesh(
           new RoundedBoxGeometry(1.0, 2.0, 1.0, 10, 0.5),
@@ -1261,6 +1243,7 @@ export default defineComponent({
       // controls.update();
       renderer.render(scene, camera);
     }
+
     return {
       container,
       joystick,
