@@ -465,8 +465,9 @@ import {
 // import Stats from "stats.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 
-// import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
+import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
 import nipplejs from "nipplejs";
 import housesData from "./houses.js";
 import Drawer from "./components/Drawer.vue";
@@ -489,6 +490,11 @@ export default defineComponent({
     THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
     THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
     let mixer = null;
+    let playerMixer = null;
+    let stand = null;
+    let wallk = null;
+    let runing = null;
+
     const container = ref({});
     const joystick = ref({});
     const loadingBarElement = ref({});
@@ -516,7 +522,11 @@ export default defineComponent({
         requestMethod.call(element);
       }
     }
+    let defaultMaterial = null;
     const buyHouse = () => {
+      if (!defaultMaterial) {
+        defaultMaterial = currentIntersect.children[1].material.clone();
+      }
       var material2 = currentIntersect.children[1].material.clone();
       material2.color = new THREE.Color(0xff0000);
       currentIntersect.children[1].material = material2;
@@ -541,9 +551,9 @@ export default defineComponent({
       }, 3000);
     };
     const sellHouse = () => {
-      var material2 = currentIntersect.children[1].material.clone();
-      material2.color = new THREE.Color(0x1edaff);
-      currentIntersect.children[1].material = material2;
+      // var material2 = currentIntersect.children[1].material.clone();
+      // material2.color = new THREE.Color(0x00a3e0);
+      currentIntersect.children[1].material = defaultMaterial;
       const number = currentIntersect.name.replace(/^\D+/g, "");
 
       const sign = signs.find((sign) => {
@@ -727,7 +737,36 @@ export default defineComponent({
 
     render();
 
-    loadColliderEnvironment();
+    gltfLoader.load("/avatar/Soldier.glb", (playerGltf) => {
+      const fbx = playerGltf.scene;
+      fbx.scale.setScalar(0.9);
+      fbx.traverse((c) => {
+        c.castShadow = true;
+      });
+      player = fbx;
+
+      player.capsuleInfo = {
+        radius: 0.5,
+        segment: new THREE.Line3(
+          new THREE.Vector3(),
+          new THREE.Vector3(0, -1.0, 0.0)
+        ),
+      };
+      player.position.set(0, 0, -120);
+
+      player.children[0].translateZ(-1.5);
+      player.children[0].translateY(-1.5);
+      scene.add(player);
+      playerMixer = new THREE.AnimationMixer(player);
+      wallk = playerMixer.clipAction(playerGltf.animations[3]);
+      stand = playerMixer.clipAction(playerGltf.animations[0]);
+      runing = playerMixer.clipAction(playerGltf.animations[1]);
+      wallk.timeScale *= 15;
+      stand.timeScale *= 15;
+      runing.timeScale *= 15;
+      // stand.play();
+      loadColliderEnvironment();
+    });
 
     function init() {
       const bgColor = 0x00d4ff;
@@ -812,22 +851,6 @@ export default defineComponent({
 
     function loadColliderEnvironment() {
       gltfLoader.load("/models/palmmap2.glb", (res) => {
-        // character
-        player = new THREE.Mesh(
-          new RoundedBoxGeometry(1.0, 2.0, 1.0, 10, 0.5),
-          new THREE.MeshStandardMaterial()
-        );
-        player.geometry.translate(0, -0.5, 0);
-        player.capsuleInfo = {
-          radius: 0.5,
-          segment: new THREE.Line3(
-            new THREE.Vector3(),
-            new THREE.Vector3(0, -1.0, 0.0)
-          ),
-        };
-        scene.add(player);
-        player.position.set(0, 100, 120);
-
         // map
         const gltfScene = res.scene;
         gltfScene.scale.setScalar(20);
@@ -924,20 +947,60 @@ export default defineComponent({
 
       // gui.add(params, "reset");
       // gui.open();
-
+      let currentAction = "stand";
+      let fadingSpeed = 0.02;
+      const playWalkingRunning = () => {
+        if (run.value === true) {
+          if (currentAction !== "running")
+            if (currentAction === "stand") {
+              stand.fadeOut(fadingSpeed);
+              runing.reset().fadeIn(fadingSpeed).play();
+            } else {
+              wallk.fadeOut(fadingSpeed);
+              runing.reset().fadeIn(fadingSpeed).play();
+            }
+          currentAction = "running";
+        } else {
+          if (currentAction !== "wallking")
+            if (currentAction === "stand") {
+              stand.fadeOut(fadingSpeed);
+              wallk.reset().fadeIn(fadingSpeed).play();
+            } else {
+              runing.fadeOut(fadingSpeed);
+              wallk.reset().fadeIn(fadingSpeed).play();
+            }
+          currentAction = "wallking";
+        }
+      };
+      const stopWalkingRunning = () => {
+        console.log("currentAction :>> ", currentAction);
+        if (currentAction !== "stand")
+          if (currentAction === "wallking") {
+            wallk.fadeOut(fadingSpeed);
+            stand.reset().fadeIn(fadingSpeed).play();
+          } else {
+            runing.fadeOut(fadingSpeed);
+            stand.reset().fadeIn(fadingSpeed).play();
+          }
+        currentAction = "stand";
+      };
       window.addEventListener("keydown", function (e) {
         switch (e.code) {
           case "KeyW":
             fwdPressed = true;
+            playWalkingRunning();
             break;
           case "KeyS":
             bkdPressed = true;
+            playWalkingRunning();
             break;
           case "KeyD":
             rgtPressed = true;
+            playWalkingRunning();
             break;
           case "KeyA":
             lftPressed = true;
+            playWalkingRunning();
             break;
           case "ShiftLeft":
             run.value = true;
@@ -973,6 +1036,9 @@ export default defineComponent({
           case "KeyR":
             reset();
             break;
+        }
+        if (!fwdPressed && !bkdPressed && !rgtPressed && !lftPressed) {
+          stopWalkingRunning();
         }
       });
     }
@@ -1150,6 +1216,8 @@ export default defineComponent({
       if (player.position.y < -25) {
         reset();
       }
+      // console.log("player.rotation.z :>> ", camera.rotation.y);
+      player.rotation.y = controls.getAzimuthalAngle();
     }
     let up = true;
     function render() {
@@ -1164,7 +1232,7 @@ export default defineComponent({
       } else {
         controls.maxPolarAngle = Math.PI / 2;
         controls.minDistance = 1;
-        controls.maxDistance = 20;
+        controls.maxDistance = 10;
       }
 
       if (collider && houseDetails.value === false) {
@@ -1172,6 +1240,10 @@ export default defineComponent({
 
         for (let i = 0; i < physicsSteps; i++) {
           updatePlayer(delta / physicsSteps);
+
+          if (playerMixer) {
+            playerMixer.update(clock.getDelta());
+          }
         }
       }
 
@@ -1226,6 +1298,7 @@ export default defineComponent({
         }
         currentIntersect = null;
       }
+
       if (prevIntersect && prevIntersect.name.indexOf("area") !== -1) {
         if (prevIntersect.children[2].position.y > 0) {
           prevIntersect.children[2].position.y -= 0.4;
@@ -1236,6 +1309,7 @@ export default defineComponent({
       if (mixer) {
         mixer.update(clock.getDelta());
       }
+
       if (signToFlip && signToFlip.rotation) {
         signToFlip.rotation.y -= Math.PI;
         signToFlip = {};
