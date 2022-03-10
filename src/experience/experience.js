@@ -141,7 +141,32 @@ export default (overlayElement, joystick, loadingBarElement) => {
       houseDetails.value = true;
     }
   };
+  const rotateQuarternion = new THREE.Quaternion();
+  const directionOffset = () => {
+    var directionOffset = 0; // w
 
+    if (playerDirection.up) {
+      if (playerDirection.left) {
+        directionOffset = Math.PI / 4; // w+a
+      } else if (playerDirection.right) {
+        directionOffset = -Math.PI / 4; // w+d
+      }
+    } else if (playerDirection.down) {
+      if (playerDirection.left) {
+        directionOffset = Math.PI / 4 + Math.PI / 2; // s+a
+      } else if (playerDirection.right) {
+        directionOffset = -Math.PI / 4 - Math.PI / 2; // s+d
+      } else {
+        directionOffset = Math.PI; // s
+      }
+    } else if (playerDirection.left) {
+      directionOffset = Math.PI / 2; // a
+    } else if (playerDirection.right) {
+      directionOffset = -Math.PI / 2; // d
+    }
+
+    return directionOffset;
+  };
   let playerTurning = "";
   const updatePlayer = (delta) => {
     // player y position
@@ -160,139 +185,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
     if (deviceType() === "desktop") {
       // player direction
-      let angle;
-
-      if (playerDirection.up && playerDirection.right) {
-        angle = controls.getAzimuthalAngle() - Math.PI / 4;
-        if (playerTurning !== "rightup") {
-          if (Math.abs(player.rotation.y - angle) > Math.PI + 0.2) {
-            player.rotation.y = angle;
-          } else {
-            gsap.to(player.rotation, {
-              duration: 0.2,
-              y: angle,
-              onComplete: () => {
-                playerTurning = "";
-                console.log("angle :>> ", angle);
-                console.log("player.rotation.y :>> ", player.rotation.y);
-              },
-            });
-            playerTurning = "rightup";
-          }
-        }
-      } else if (playerDirection.down && playerDirection.right) {
-        angle = controls.getAzimuthalAngle() - (Math.PI / 2 + Math.PI / 4);
-        if (playerTurning !== "rightdown") {
-          if (Math.abs(player.rotation.y - angle) > Math.PI + 0.2) {
-            player.rotation.y = angle;
-          } else {
-            gsap.to(player.rotation, {
-              duration: 0.2,
-              y: angle,
-              onComplete: () => {
-                playerTurning = "";
-              },
-            });
-            playerTurning = "rightdown";
-          }
-        }
-      } else if (playerDirection.up && playerDirection.left) {
-        angle = controls.getAzimuthalAngle() + Math.PI / 4;
-        if (playerTurning !== "leftup") {
-          if (Math.abs(player.rotation.y - angle) > Math.PI + 0.2) {
-            player.rotation.y = angle;
-          } else {
-            gsap.to(player.rotation, {
-              duration: 0.2,
-              y: angle,
-              onComplete: () => {
-                playerTurning = "";
-              },
-            });
-            playerTurning = "leftup";
-          }
-        }
-      } else if (playerDirection.down && playerDirection.left) {
-        angle = controls.getAzimuthalAngle() - (Math.PI + Math.PI / 4);
-        if (playerTurning !== "leftdown") {
-          if (Math.abs(player.rotation.y - angle) > Math.PI + 0.2) {
-            player.rotation.y = angle;
-          } else {
-            gsap.to(player.rotation, {
-              duration: 0.2,
-              y: angle,
-              onComplete: () => {
-                playerTurning = "";
-              },
-            });
-            playerTurning = "leftdown";
-          }
-        }
-      } else if (playerDirection.up) {
-        angle = controls.getAzimuthalAngle();
-        if (playerTurning !== "up") {
-          if (Math.abs(player.rotation.y - angle) > Math.PI + 0.2) {
-            player.rotation.y = angle;
-          } else {
-            gsap.to(player.rotation, {
-              duration: 0.02,
-              y: angle,
-              onComplete: () => {
-                playerTurning = "";
-              },
-            });
-            playerTurning = "up";
-          }
-        }
-      } else if (playerDirection.down) {
-        angle = controls.getAzimuthalAngle() - Math.PI;
-        if (playerTurning !== "down") {
-          if (Math.abs(player.rotation.y - angle) > Math.PI + 0.2) {
-            player.rotation.y = angle;
-          } else {
-            gsap.to(player.rotation, {
-              duration: 0.02,
-              y: angle,
-              onComplete: () => {
-                playerTurning = "";
-              },
-            });
-            playerTurning = "down";
-          }
-        }
-      } else if (playerDirection.right) {
-        angle = controls.getAzimuthalAngle() - Math.PI / 2;
-        if (playerTurning !== "right") {
-          if (Math.abs(player.rotation.y - angle) > Math.PI + 0.2) {
-            player.rotation.y = angle;
-          } else {
-            gsap.to(player.rotation, {
-              duration: 0.2,
-              y: angle,
-              onComplete: () => {
-                playerTurning = "";
-              },
-            });
-            playerTurning = "right";
-          }
-        }
-      } else if (playerDirection.left) {
-        angle = controls.getAzimuthalAngle() - Math.PI / 2 + Math.PI;
-        if (playerTurning !== "left") {
-          if (Math.abs(player.rotation.y - angle) > Math.PI + 0.2) {
-            player.rotation.y = angle;
-          } else {
-            gsap.to(player.rotation, {
-              duration: 0.2,
-              y: angle,
-              onComplete: () => {
-                playerTurning = "";
-              },
-            });
-            playerTurning = "left";
-          }
-        }
-      }
+      let angle = controls.getAzimuthalAngle();
 
       if (
         playerDirection.up ||
@@ -300,7 +193,19 @@ export default (overlayElement, joystick, loadingBarElement) => {
         playerDirection.right ||
         playerDirection.left
       ) {
-        tempVector.set(0, 0, -1).applyAxisAngle(upVector, angle);
+        const angleYCameraDirection = controls.getAzimuthalAngle();
+        // rotate model
+        rotateQuarternion.setFromAxisAngle(
+          new THREE.Vector3(0, 1, 0),
+          angleYCameraDirection + directionOffset()
+        );
+        player.quaternion.rotateTowards(rotateQuarternion, 0.005);
+        const dirrr = new THREE.Euler().setFromQuaternion(
+          player.quaternion,
+          "YXZ"
+        );
+
+        tempVector.set(0, 0, -1).applyAxisAngle(upVector, dirrr.y);
         player.position.addScaledVector(
           tempVector,
           playerSpeed * speedMultiplier * delta
@@ -316,10 +221,22 @@ export default (overlayElement, joystick, loadingBarElement) => {
         playerDirection.right ||
         playerDirection.up
       ) {
-        tempVector.set(0, 0, -1).applyAxisAngle(upVector, angle);
+        const angleYCameraDirection = controls.getAzimuthalAngle();
+        // rotate model
+        rotateQuarternion.setFromAxisAngle(
+          new THREE.Vector3(0, 1, 0),
+          angleYCameraDirection + (radian - Math.PI / 2)
+        );
+        player.quaternion.rotateTowards(rotateQuarternion, 0.005);
+        const dirrr = new THREE.Euler().setFromQuaternion(
+          player.quaternion,
+          "YXZ"
+        );
+
+        tempVector.set(0, 0, -1).applyAxisAngle(upVector, dirrr.y);
         player.position.addScaledVector(
           tempVector,
-          playerSpeed * delta * speedAngle.down
+          playerSpeed * speedMultiplier * delta
         );
       }
     }

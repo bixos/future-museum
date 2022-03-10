@@ -19,7 +19,7 @@ export default (THREE, OrbitControls) => {
    * Scene Setup
    */
   const scene = new THREE.Scene();
-
+  // scene.fog = new THREE.Fog(0xcccccc, 400, 0);
   /**
    * Lights
    */
