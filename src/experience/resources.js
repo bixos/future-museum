@@ -22,26 +22,26 @@ export default (loadingManager, THREE, MeshBVH, fn) => {
         new THREE.Vector3(0, -1.0, 0.0)
       ),
     };
-    player.position.set(0, 100, -180);
+
+    player.position.set(0, 100, 120);
 
     player.children[0].translateZ(1.52);
     player.children[0].rotateZ(-Math.PI);
     player.children[0].castShadow = false;
     player.children[0].receiveShadow = false;
-
+    console.log("playerGLTF.animations :>> ", playerGLTF.animations);
     let playerMixer = new THREE.AnimationMixer(player);
-
     let falling = playerMixer.clipAction(playerGLTF.animations[1]);
     let stand = playerMixer.clipAction(playerGLTF.animations[2]);
-    let jumpForward = playerMixer.clipAction(playerGLTF.animations[4]);
-    let runing = playerMixer.clipAction(playerGLTF.animations[7]);
-    let wallk = playerMixer.clipAction(playerGLTF.animations[8]);
-    wallk.timeScale *= 10;
-    stand.timeScale *= 20;
-    runing.timeScale *= 10;
-    jumpForward.timeScale *= 10;
+    let jumpForward = playerMixer.clipAction(playerGLTF.animations[3]);
+    let runing = playerMixer.clipAction(playerGLTF.animations[4]);
+    let wallk = playerMixer.clipAction(playerGLTF.animations[5]);
+    // wallk.timeScale *= 2;
+    // stand.timeScale *= 3;
+    // runing.timeScale *= 2;
+    // jumpForward.timeScale *= 2;
 
-    falling.timeScale *= 20;
+    // falling.timeScale *= 3;
     falling.play();
     let currentAction = falling;
 
@@ -121,7 +121,7 @@ export default (loadingManager, THREE, MeshBVH, fn) => {
           animationName.indexOf("circle") === -1
         ) {
           const anim = mapMixer.clipAction(mapGLTF.animations[index]);
-          anim.timeScale *= 20;
+          // anim.timeScale *= 20;
           anim.play();
         }
       }

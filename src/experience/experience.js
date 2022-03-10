@@ -343,7 +343,13 @@ export default (overlayElement, joystick, loadingBarElement) => {
   let up = true;
   const raycaster = new THREE.Raycaster();
   let DOWN_DIRECTION = new THREE.Vector3(0, -1, 0);
+  let oldElapsedTime = 0;
+
   const render = () => {
+    const elapsedTime = clock.getElapsedTime();
+    const deltaTime = elapsedTime - oldElapsedTime;
+    oldElapsedTime = elapsedTime;
+
     requestAnimationFrame(render);
 
     const delta = Math.min(clock.getDelta(), 0.1);
@@ -353,22 +359,23 @@ export default (overlayElement, joystick, loadingBarElement) => {
       controls.maxDistance = 1e-4;
     } else {
       controls.maxPolarAngle = Math.PI / 2;
-      controls.minDistance = 1;
+      controls.minDistance = 2;
       controls.maxDistance = 10;
     }
 
     if (collider && houseDetails.value === false) {
       for (let i = 0; i < physicsSteps; i++) {
-        updatePlayer(delta / physicsSteps);
-        if (playerMixer) {
-          playerMixer.update(clock.getDelta());
-        }
+        updatePlayer(deltaTime / physicsSteps);
       }
+    }
+
+    if (playerMixer) {
+      playerMixer.update(deltaTime);
     }
 
     // Update mixer map
     if (mapMixer) {
-      mapMixer.update(clock.getDelta());
+      mapMixer.update(deltaTime);
     }
     if (player) {
       raycaster.set(
@@ -648,7 +655,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
       gsap
         .timeline({
           paused: false,
-          defaults: { duration: 2.8 },
+          defaults: { duration: 2.23 },
         })
         .to(".overlay", { opacity: 0 })
         .then(() => {
@@ -661,6 +668,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
     },
     (itemUrl, itemsLoaded, itemsTotal) => {
       const progressRatio = itemsLoaded / itemsTotal;
+      console.log("progressRatio :>> ", progressRatio);
       loadingBarElement.value.style.transform = `scaleX(${progressRatio})`;
     },
     () => {

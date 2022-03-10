@@ -961,7 +961,7 @@ canvas {
   .loading-bar-container {
     top: auto;
     right: 30vh;
-    bottom: 30vh;
+    bottom: 20vh;
   }
 }
 .mobile-background-loading {
@@ -1000,7 +1000,7 @@ canvas {
   border-radius: 20px;
   z-index: 2;
   position: absolute;
-  top: 50%;
+  top: 30%;
 
   height: 50px;
   width: 255px;
