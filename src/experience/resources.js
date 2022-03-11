@@ -104,6 +104,7 @@ export default (loadingManager, THREE, MeshBVH, fn) => {
       );
       mergedGeometry.boundsTree = new MeshBVH(mergedGeometry, {
         lazyGeneration: true,
+        maxDepth: 60,
       });
 
       const collider = new THREE.Mesh(mergedGeometry);

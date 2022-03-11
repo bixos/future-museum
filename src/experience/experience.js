@@ -151,6 +151,8 @@ export default (overlayElement, joystick, loadingBarElement) => {
         currentAction.fadeOut(0.05);
         stand.reset().fadeIn(0.05).play();
         currentAction = stand;
+        playWallkingRunning();
+        stopState();
       }, 2800);
     }
   };

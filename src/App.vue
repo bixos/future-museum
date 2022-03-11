@@ -55,11 +55,7 @@
       <div class="nav">
         <div v-for="link in links" :key="link.path" class="linksContainer">
           <img :src="link.icon" class="link-icon" alt="link-icon" />
-          <router-link class="link" :to="link.path">
-            <a :href="link.link" target="_blank">{{
-              link.title
-            }}</a></router-link
-          >
+          <a :href="link.link" target="_blank">{{ link.title }}</a>
         </div>
       </div>
     </Drawer>
@@ -139,7 +135,6 @@
     <KeysHelper v-if="deviceType() === 'desktop'" />
     <MobileActions
       :interactHint="interactHint"
-      :running="running"
       @onReset="reset(camera, controls)"
       @onInteract="interact()"
       @onRun="triggerRun()"

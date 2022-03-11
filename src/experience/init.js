@@ -23,19 +23,18 @@ export default (THREE, OrbitControls) => {
   /**
    * Lights
    */
-  const light = new THREE.DirectionalLight(0xfdfbd3, 1, 100);
+  const light = new THREE.DirectionalLight(0xfdfbd3, 1);
   light.position.set(0, 1, 0);
   light.position.multiplyScalar(50);
   light.shadow.camera.far = 90;
-  light.shadow.mapSize.set(1024, 1024);
-  light.shadowMapWidth = light.shadowMapHeight = 1024 * 2;
+  light.shadow.mapSize.set(1024 * 8, 1024 * 8);
+  light.shadow.mapSize.width = light.shadow.mapSize.height = 1024 * 8;
   light.castShadow = true;
-  light.shadowCameraLeft = -200;
-  light.shadowCameraRight = 200;
-  light.shadowCameraTop = 150;
-  light.shadowCameraBottom = -300;
-  light.shadowBias = -0.0001;
-  light.shadowDarkness = 3.5;
+  light.shadow.camera.left = -200;
+  light.shadow.camera.right = 200;
+  light.shadow.camera.top = 150;
+  light.shadow.camera.bottom = -300;
+  light.shadow.bias = -0.0001;
   light.shadow.normalBias = 0.5;
   scene.add(light);
 
@@ -43,6 +42,9 @@ export default (THREE, OrbitControls) => {
   hemiLight.color.setHSL(0.6, 0.75, 0.5);
   hemiLight.groundColor.setHSL(0.095, 0.5, 0.5);
   hemiLight.position.set(0, 500, 0);
+  // const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
+  // ambientLight.color.setHSL(0.6, 0.75, 0.5);
+
   scene.add(hemiLight);
 
   /**
