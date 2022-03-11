@@ -49,7 +49,6 @@ export default {
       emit("onInteract");
     };
     const onRun = (e) => {
-      console.log("object :>> ", e);
       emit("onRun");
       running.value = !running.value;
     };

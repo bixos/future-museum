@@ -29,7 +29,6 @@ export default (loadingManager, THREE, MeshBVH, fn) => {
     player.children[0].rotateZ(-Math.PI);
     player.children[0].castShadow = false;
     player.children[0].receiveShadow = false;
-    console.log("playerGLTF.animations :>> ", playerGLTF.animations);
     let playerMixer = new THREE.AnimationMixer(player);
     let falling = playerMixer.clipAction(playerGLTF.animations[1]);
     let stand = playerMixer.clipAction(playerGLTF.animations[2]);

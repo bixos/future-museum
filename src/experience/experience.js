@@ -1,6 +1,6 @@
 import { ref, onMounted, provide } from "vue";
 import nipplejs from "nipplejs";
-import Stats from "stats.js";
+// import Stats from "stats.js";
 
 import { gsap } from "gsap";
 import * as THREE from "three";
@@ -14,9 +14,9 @@ THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
 // stats setup
-let stats;
-stats = new Stats();
-document.body.appendChild(stats.dom);
+// let stats;
+// stats = new Stats();
+// document.body.appendChild(stats.dom);
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
@@ -148,7 +148,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
       falling.reset().play();
       currentAction = falling;
       setTimeout(() => {
-        console.log("currentAction :>> ", currentAction);
         currentAction.fadeOut(0.05);
         stand.reset().fadeIn(0.05).play();
         currentAction = stand;
@@ -377,7 +376,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
   let oldElapsedTime = 0;
 
   const render = () => {
-    stats.update();
+    // stats.update();
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - oldElapsedTime;
     oldElapsedTime = elapsedTime;
@@ -471,13 +470,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
     renderer.render(scene, camera);
   };
-  window.addEventListener(
-    "drag",
-    function (event) {
-      console.log("event :>> ", event);
-    },
-    false
-  );
   window.addEventListener("keydown", (e) => {
     switch (e.code) {
       case "KeyW":
@@ -697,7 +689,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
     },
     (itemUrl, itemsLoaded, itemsTotal) => {
       const progressRatio = itemsLoaded / itemsTotal;
-      console.log("progressRatio :>> ", progressRatio);
       loadingBarElement.value.style.transform = `scaleX(${progressRatio})`;
     },
     () => {
@@ -705,7 +696,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
     }
   );
   loadResources(loadingManager, THREE, MeshBVH, (data) => {
-    console.log("data :>> ", data);
     player = data.player;
     Map = data.Map;
     collider = data.collider;
