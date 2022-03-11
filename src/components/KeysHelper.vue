@@ -36,25 +36,25 @@
       </div>
       <span class="walk-hint"> Walk </span>
     </div>
-    <div>
-      <div style="display: flex; align-items: center">
+    <div style="display: flex; flex-direction: column; align-items: center">
+      <div style="display: flex; align-items: center; width: 100%">
         <div class="key key-mouse">
           <img src="../assets/icons/Mouse.svg" class="mouse" alt="mouse" />
         </div>
         <span class="right-hint"> Look </span>
       </div>
-      <div style="display: flex; align-items: center">
+      <div style="display: flex; align-items: center; width: 100%">
         <div class="key key-mouse">
           <span>R</span>
         </div>
         <span class="right-hint"> Restart </span>
       </div>
-      <div style="display: flex; align-items: center">
-        <div class="key left-key">
+      <div style="display: flex; align-items: center; width: 100%">
+        <div class="key left-key" style="width: 100%">
           <span>Shift</span>
         </div>
-        <span class="right-hint"> Walk </span>
       </div>
+      <span class="walk-hint"> Run </span>
     </div>
   </div>
 </template>

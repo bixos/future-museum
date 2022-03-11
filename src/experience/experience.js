@@ -46,7 +46,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
   let speedAngle = {};
   let radian = 0;
 
-  let running = true;
+  let running = false;
 
   let firstPerson = false;
   let playerIsOnGround = false;
@@ -74,7 +74,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
   let runing = null;
   let wallk = null;
   let currentAction = null;
-  let fadingSpeed = 0.02;
+  let fadingSpeed = 0.2;
 
   /**
    * Setup Variables
@@ -90,7 +90,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
   };
 
   const playWallkingRunning = () => {
-    if (currentAction !== falling) {
+    if (currentAction !== falling && currentAction !== jumpForward) {
       if (running === true) {
         if (currentAction !== runing) {
           currentAction.fadeOut(fadingSpeed);
@@ -108,7 +108,14 @@ export default (overlayElement, joystick, loadingBarElement) => {
   };
 
   const stopState = () => {
-    if (currentAction !== falling) {
+    if (
+      currentAction !== falling &&
+      currentAction !== jumpForward &&
+      !playerDirection.up &&
+      !playerDirection.down &&
+      !playerDirection.right &&
+      !playerDirection.left
+    ) {
       if (currentAction !== stand) {
         currentAction.fadeOut(fadingSpeed);
         stand.reset().fadeIn(fadingSpeed).play();
@@ -167,7 +174,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
     return directionOffset;
   };
-  let playerTurning = "";
+
   const updatePlayer = (delta) => {
     // player y position
     playerVelocity.y += playerIsOnGround ? 0 : delta * gravity;
@@ -311,8 +318,8 @@ export default (overlayElement, joystick, loadingBarElement) => {
       );
     } else {
       if (currentAction === jumpForward) {
-        jumpForward.fadeOut(0.02);
-
+        jumpForward.fadeOut(0.2);
+        currentAction = stand;
         if (
           playerDirection.up ||
           playerDirection.down ||
@@ -321,7 +328,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
         ) {
           playWallkingRunning();
         } else {
-          stand.reset().fadeIn(0.02).play();
+          stand.reset().fadeIn(0.2).play();
           currentAction = stand;
         }
       }
@@ -352,7 +359,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
     requestAnimationFrame(render);
 
-    const delta = Math.min(clock.getDelta(), 0.1);
+    // const delta = Math.min(clock.getDelta(), 0.1);
     if (firstPerson) {
       controls.maxPolarAngle = Math.PI;
       controls.minDistance = 1e-4;
@@ -459,7 +466,8 @@ export default (overlayElement, joystick, loadingBarElement) => {
         playWallkingRunning();
         break;
       case "ShiftLeft":
-        running = false;
+        running = true;
+        playWallkingRunning();
         break;
       case "Space":
         if (playerIsOnGround) {
@@ -485,8 +493,8 @@ export default (overlayElement, joystick, loadingBarElement) => {
         playerDirection.left = false;
         break;
       case "ShiftLeft":
-        running = true;
-        // playWallkingRunning();
+        running = false;
+        playWallkingRunning();
         break;
       case "Enter":
         interact();
@@ -495,16 +503,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
         reset(camera, controls);
         break;
     }
-    if (
-      !playerDirection.up &&
-      !playerDirection.down &&
-      !playerDirection.right &&
-      !playerDirection.left &&
-      currentAction !== falling &&
-      currentAction !== jumpForward
-    ) {
-      stopState();
-    }
+    stopState();
   });
 
   onMounted(() => {
