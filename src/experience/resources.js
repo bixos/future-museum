@@ -45,7 +45,7 @@ export default (loadingManager, THREE, MeshBVH, fn) => {
     falling.play();
     let currentAction = falling;
 
-    gltfLoader.load("/models/palmmap.glb", (mapGLTF) => {
+    gltfLoader.load("/models/palmmap2.glb", (mapGLTF) => {
       /**
        * Map Setup
        */
