@@ -1,5 +1,5 @@
 <template>
-  <div v-if="deviceType() === 'desktop'" class="key-helper">
+  <div class="key-helper">
     <div style="display: flex; flex-direction: column; align-items: center">
       <div class="key">
         <span>W</span>
@@ -58,16 +58,6 @@
     </div>
   </div>
 </template>
-
-<script>
-import { deviceType } from "../experience/helper";
-
-export default {
-  setup() {
-    return { deviceType };
-  },
-};
-</script>
 
 <style lang="scss" scoped>
 .key-helper {

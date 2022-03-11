@@ -24,7 +24,7 @@ export default (THREE, OrbitControls) => {
    * Lights
    */
   const light = new THREE.DirectionalLight(0xfdfbd3, 1, 100);
-  light.position.set(0, 1, -0.025);
+  light.position.set(0, 1, 0);
   light.position.multiplyScalar(50);
   light.shadow.camera.far = 90;
   light.shadow.mapSize.set(1024, 1024);
@@ -65,6 +65,7 @@ export default (THREE, OrbitControls) => {
    * Controls
    */
   const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enablePan = false;
 
   window.addEventListener(
     "resize",

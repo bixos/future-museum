@@ -23,7 +23,7 @@ export default (loadingManager, THREE, MeshBVH, fn) => {
       ),
     };
 
-    player.position.set(0, 100, 120);
+    player.position.set(0, 80, -120);
 
     player.children[0].translateZ(1.52);
     player.children[0].rotateZ(-Math.PI);

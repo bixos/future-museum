@@ -1,5 +1,6 @@
-import { ref, onMounted } from "vue";
+import { ref, onMounted, provide } from "vue";
 import nipplejs from "nipplejs";
+import Stats from "stats.js";
 
 import { gsap } from "gsap";
 import * as THREE from "three";
@@ -12,6 +13,10 @@ import {
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
+// stats setup
+let stats;
+stats = new Stats();
+document.body.appendChild(stats.dom);
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
@@ -90,7 +95,14 @@ export default (overlayElement, joystick, loadingBarElement) => {
   };
 
   const playWallkingRunning = () => {
-    if (currentAction !== falling && currentAction !== jumpForward) {
+    if (
+      currentAction !== falling &&
+      currentAction !== jumpForward &&
+      (playerDirection.up ||
+        playerDirection.down ||
+        playerDirection.right ||
+        playerDirection.left)
+    ) {
       if (running === true) {
         if (currentAction !== runing) {
           currentAction.fadeOut(fadingSpeed);
@@ -125,21 +137,33 @@ export default (overlayElement, joystick, loadingBarElement) => {
   };
 
   const reset = (camera, controls) => {
-    playerVelocity.set(0, 0, 0);
-    player.position.set(0, 100, 120);
+    if (player) {
+      playerVelocity.set(0, 0, 0);
+      player.position.set(0, 100, 120);
 
-    camera.position.add(player.position);
-    controls.update();
+      camera.position.add(player.position);
+      controls.update();
 
-    currentAction.stop();
-    falling.reset().play();
-    currentAction = falling;
-    setTimeout(() => {
-      console.log("currentAction :>> ", currentAction);
-      currentAction.fadeOut(0.05);
-      stand.reset().fadeIn(0.05).play();
-      currentAction = stand;
-    }, 2800);
+      currentAction.stop();
+      falling.reset().play();
+      currentAction = falling;
+      setTimeout(() => {
+        console.log("currentAction :>> ", currentAction);
+        currentAction.fadeOut(0.05);
+        stand.reset().fadeIn(0.05).play();
+        currentAction = stand;
+      }, 2800);
+    }
+  };
+
+  const triggerRun = () => {
+    running = !running;
+  };
+  const triggerJump = () => {
+    if (playerIsOnGround) {
+      playerVelocity.y = 10.0;
+      playJumpForward();
+    }
   };
 
   const interact = () => {
@@ -353,6 +377,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
   let oldElapsedTime = 0;
 
   const render = () => {
+    stats.update();
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - oldElapsedTime;
     oldElapsedTime = elapsedTime;
@@ -446,7 +471,13 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
     renderer.render(scene, camera);
   };
-
+  window.addEventListener(
+    "drag",
+    function (event) {
+      console.log("event :>> ", event);
+    },
+    false
+  );
   window.addEventListener("keydown", (e) => {
     switch (e.code) {
       case "KeyW":
@@ -563,7 +594,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
   });
 
   const container = ref({});
-  const activeTab = ref(1);
   const loading = ref(true);
   const balance = ref(1000000);
   const celebrate = ref(false);
@@ -663,7 +693,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
           stand.reset().fadeIn(0.05).play();
           currentAction = stand;
         });
-      loadingBarElement.value.style.transform = "";
+      // loadingBarElement.value.style.transform = "";
     },
     (itemUrl, itemsLoaded, itemsTotal) => {
       const progressRatio = itemsLoaded / itemsTotal;
@@ -701,7 +731,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
     loadingBarElement,
     houseDetails,
     house,
-    activeTab,
     celebrate,
     balance,
     interactHint,
@@ -711,17 +740,16 @@ export default (overlayElement, joystick, loadingBarElement) => {
     sellHouse,
     camera,
     controls,
+    triggerRun,
+    running,
+    triggerJump,
   };
 };
 
 // import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
-// import Stats from "stats.js";
 
 // let gui;
-// let stats;
-// stats setup
-//   stats = new Stats();
-//   document.body.appendChild(stats.dom);
+
 // dat.gui
 //   gui = new GUI();
 //   gui.add(params, "firstPerson").onChange((v) => {
@@ -733,7 +761,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
 //         .add(controls.target);
 //     }
 //   });
-// stats.update();
 // const physicsFolder = gui.addFolder("Player");
 // physicsFolder.add(params, "physicsSteps", 0, 30, 1);
 // physicsFolder.add(params, "gravity", -100, 100, 0.01).onChange((v) => {
