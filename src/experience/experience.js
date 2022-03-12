@@ -1,6 +1,7 @@
 import { ref, onMounted, provide } from "vue";
 import nipplejs from "nipplejs";
 // import Stats from "stats.js";
+import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils.js";
 
 import { gsap } from "gsap";
 import * as THREE from "three";
@@ -24,6 +25,11 @@ import { deviceType } from "./helper";
 import loadResources from "./resources";
 import init from "./init";
 
+import { io } from "socket.io-client";
+
+let socket;
+let id;
+let clients = new Object();
 export default (overlayElement, joystick, loadingBarElement) => {
   /**
    * Interface variables
@@ -160,6 +166,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
   const triggerRun = () => {
     running = !running;
   };
+
   const triggerJump = () => {
     if (playerIsOnGround) {
       playerVelocity.y = 10.0;
@@ -173,6 +180,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
       houseDetails.value = true;
     }
   };
+
   const rotateQuarternion = new THREE.Quaternion();
   const directionOffset = () => {
     var directionOffset = 0; // w
@@ -370,6 +378,14 @@ export default (overlayElement, joystick, loadingBarElement) => {
     if (player.position.y < -25) {
       reset(camera, controls);
     }
+
+    if (socket) {
+      socket.emit("move", {
+        position: [player.position.x, player.position.y, player.position.z],
+        rotation: [player.rotation.x, player.rotation.y, player.rotation.z],
+        state: currentAction._clip.name,
+      });
+    }
   };
 
   let up = true;
@@ -406,10 +422,18 @@ export default (overlayElement, joystick, loadingBarElement) => {
       playerMixer.update(deltaTime);
     }
 
+    for (let i = 0; i < Object.keys(clients).length; i++) {
+      const key = Object.keys(clients)[i];
+      if (key !== id) {
+        clients[key].mixer.update(deltaTime);
+      }
+    }
+
     // Update mixer map
     if (mapMixer) {
       mapMixer.update(deltaTime);
     }
+
     if (player) {
       raycaster.set(
         new THREE.Vector3(
@@ -431,6 +455,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
     } else {
       interactHint.value = false;
     }
+
     if (intersects.length) {
       if (!currentIntersect) {
         currentIntersect = intersects[0].object.parent;
@@ -472,6 +497,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
     renderer.render(scene, camera);
   };
+
   window.addEventListener("keydown", (e) => {
     switch (e.code) {
       case "KeyW":
@@ -687,7 +713,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
           stand.reset().fadeIn(0.05).play();
           currentAction = stand;
         });
-      // loadingBarElement.value.style.transform = "";
     },
     (itemUrl, itemsLoaded, itemsTotal) => {
       const progressRatio = itemsLoaded / itemsTotal;
@@ -712,6 +737,220 @@ export default (overlayElement, joystick, loadingBarElement) => {
     runing = data.runing;
     wallk = data.wallk;
     currentAction = data.currentAction;
+    // playerGLTF=data.playerGLTF
+    socket = io("http://localhost:3000", {
+      transports: ["websocket", "polling", "flashsocket"],
+    });
+
+    //On connection server sends the client his ID
+    socket.on("introduction", (_id, _clientNum, _ids) => {
+      for (let i = 0; i < _ids.length; i++) {
+        if (_ids[i] != _id) {
+          const newPlayer = SkeletonUtils.clone(player);
+          clients[_ids[i]] = {
+            mesh: newPlayer,
+          };
+
+          clients[_ids[i]].mixer = new THREE.AnimationMixer(
+            clients[_ids[i]].mesh
+          );
+          clients[_ids[i]].falling = clients[_ids[i]].mixer.clipAction(
+            data.playerGLTF.animations[1],
+            clients[_ids[i]].mesh
+          );
+          clients[_ids[i]].stand = playerMixer.clipAction(
+            data.playerGLTF.animations[2],
+            clients[_ids[i]].mesh
+          );
+          clients[_ids[i]].jumpForward = playerMixer.clipAction(
+            data.playerGLTF.animations[3],
+            clients[_ids[i]].mesh
+          );
+          clients[_ids[i]].runing = playerMixer.clipAction(
+            data.playerGLTF.animations[4],
+            clients[_ids[i]].mesh
+          );
+          clients[_ids[i]].wallk = playerMixer.clipAction(
+            data.playerGLTF.animations[5],
+            clients[_ids[i]].mesh
+          );
+
+          //Add initial users to the scene
+          scene.add(clients[_ids[i]].mesh);
+        }
+      }
+      id = _id;
+    });
+
+    socket.on("newUserConnected", (clientCount, _id, _ids) => {
+      console.log(clientCount + " clients connected");
+      let alreadyHasUser = false;
+      for (let i = 0; i < Object.keys(clients).length; i++) {
+        if (Object.keys(clients)[i] == _id) {
+          alreadyHasUser = true;
+          break;
+        }
+      }
+      if (_id != id && !alreadyHasUser) {
+        const newPlayer = SkeletonUtils.clone(player);
+
+        clients[_id] = {
+          mesh: newPlayer,
+        };
+
+        clients[_id].mixer = new THREE.AnimationMixer(clients[_id].mesh);
+        clients[_id].falling = clients[_id].mixer.clipAction(
+          data.playerGLTF.animations[1],
+          clients[_id].mesh
+        );
+        clients[_id].stand = playerMixer.clipAction(
+          data.playerGLTF.animations[2],
+          clients[_id].mesh
+        );
+        clients[_id].jumpForward = playerMixer.clipAction(
+          data.playerGLTF.animations[3],
+          clients[_id].mesh
+        );
+        clients[_id].runing = playerMixer.clipAction(
+          data.playerGLTF.animations[4],
+          clients[_id].mesh
+        );
+        clients[_id].wallk = playerMixer.clipAction(
+          data.playerGLTF.animations[5],
+          clients[_id].mesh
+        );
+        console.log("clients[_ids[i]] :>> ", clients[_id]);
+
+        //Add initial users to the scene
+        scene.add(clients[_id].mesh);
+      }
+    });
+
+    socket.on("userDisconnected", (clientCount, _id, _ids) => {
+      //Update the data from the server
+      // document.getElementById("numUsers").textContent = clientCount;
+
+      if (_id != id) {
+        console.log("A user disconnected with the id: " + _id);
+        scene.remove(clients[_id].mesh);
+        delete clients[_id];
+      }
+    });
+
+    socket.on("connect", () => {});
+
+    //Update when one of the users moves in space
+    socket.on("userPositions", (_clientProps) => {
+      // console.log("Positions of all users are ", _clientProps, id);
+      // console.log(Object.keys(_clientProps)[0] == id);
+      for (let i = 0; i < Object.keys(_clientProps).length; i++) {
+        if (Object.keys(_clientProps)[i] != id) {
+          const otherPlayerState =
+            _clientProps[Object.keys(_clientProps)[i]].state;
+          // console.log(
+          //   "otherPlayerState :>> ",
+          //   clients[Object.keys(_clientProps)[i]]
+          // );
+
+          if (otherPlayerState === "idle") {
+            clients[Object.keys(_clientProps)[i]].falling.stop();
+            clients[Object.keys(_clientProps)[i]].jumpForward.stop();
+            clients[Object.keys(_clientProps)[i]].runing.stop();
+            clients[Object.keys(_clientProps)[i]].wallk.stop();
+            clients[Object.keys(_clientProps)[i]].stand.play();
+          }
+
+          if (otherPlayerState === "walking") {
+            clients[Object.keys(_clientProps)[i]].falling.stop();
+            clients[Object.keys(_clientProps)[i]].jumpForward.stop();
+            clients[Object.keys(_clientProps)[i]].runing.stop();
+            clients[Object.keys(_clientProps)[i]].wallk.play();
+            clients[Object.keys(_clientProps)[i]].stand.stop();
+          }
+
+          if (otherPlayerState === "running") {
+            clients[Object.keys(_clientProps)[i]].falling.stop();
+            clients[Object.keys(_clientProps)[i]].jumpForward.stop();
+            clients[Object.keys(_clientProps)[i]].runing.play();
+            clients[Object.keys(_clientProps)[i]].wallk.stop();
+            clients[Object.keys(_clientProps)[i]].stand.stop();
+          }
+
+          if (otherPlayerState === "falling") {
+            clients[Object.keys(_clientProps)[i]].falling.play();
+            clients[Object.keys(_clientProps)[i]].jumpForward.stop();
+            clients[Object.keys(_clientProps)[i]].runing.stop();
+            clients[Object.keys(_clientProps)[i]].wallk.stop();
+            clients[Object.keys(_clientProps)[i]].stand.stop();
+          }
+
+          if (otherPlayerState === "jumpForward") {
+            clients[Object.keys(_clientProps)[i]].falling.stop();
+            clients[Object.keys(_clientProps)[i]].jumpForward.play();
+            clients[Object.keys(_clientProps)[i]].runing.stop();
+            clients[Object.keys(_clientProps)[i]].wallk.stop();
+            clients[Object.keys(_clientProps)[i]].stand.stop();
+          }
+
+          //Store the position
+
+          let oldPosition = clients[Object.keys(_clientProps)[i]].mesh.position;
+          let newPosition = _clientProps[Object.keys(_clientProps)[i]].position;
+          //Create a vector 3 and lerp the new position with the old position
+          let lerpedPosition = new THREE.Vector3();
+          lerpedPosition.x = THREE.Math.lerp(
+            oldPosition.x,
+            newPosition[0],
+            0.3
+          );
+          lerpedPosition.y = THREE.Math.lerp(
+            oldPosition.y,
+            newPosition[1],
+            0.3
+          );
+          lerpedPosition.z = THREE.Math.lerp(
+            oldPosition.z,
+            newPosition[2],
+            0.3
+          );
+
+          //Set the position
+          clients[Object.keys(_clientProps)[i]].mesh.position.set(
+            lerpedPosition.x,
+            lerpedPosition.y,
+            lerpedPosition.z
+          );
+
+          //Store the rotation
+          let oldRotation = clients[Object.keys(_clientProps)[i]].mesh.rotation;
+          let newRotation = _clientProps[Object.keys(_clientProps)[i]].rotation;
+
+          //Create a vector 3 and lerp the new rotation with the old rotation
+          let lerpedRotation = new THREE.Vector3();
+          lerpedRotation.x = THREE.Math.lerp(
+            oldRotation.x,
+            newRotation[0],
+            0.3
+          );
+          lerpedRotation.y = THREE.Math.lerp(
+            oldRotation.y,
+            newRotation[1],
+            0.3
+          );
+          lerpedRotation.z = THREE.Math.lerp(
+            oldRotation.z,
+            newRotation[2],
+            0.3
+          );
+          //Set the position
+          clients[Object.keys(_clientProps)[i]].mesh.rotation.set(
+            lerpedRotation.x,
+            lerpedRotation.y,
+            lerpedRotation.z
+          );
+        }
+      }
+    });
   });
 
   render();
