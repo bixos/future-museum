@@ -3,6 +3,9 @@ import nipplejs from "nipplejs";
 // import Stats from "stats.js";
 import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils.js";
 
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
+import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
+
 import { gsap } from "gsap";
 import * as THREE from "three";
 import {
@@ -27,23 +30,33 @@ import init from "./init";
 
 import { io } from "socket.io-client";
 
-let socket;
 let id;
 let clients = new Object();
+
+const globalSocket = ref(null);
 export default (overlayElement, joystick, loadingBarElement) => {
   /**
    * Interface variables
    */
   const houseDetails = ref(false);
   const interactHint = ref(false);
+  const typing = ref(false);
   const house = ref({});
-
+  const playerName = ref("Guest");
+  playerName.value = localStorage.playerName
+    ? localStorage.playerName
+    : "Guest";
   /**
    * Ray Variables
    */
   let currentIntersect = null;
   let prevIntersect = null;
   let signToFlip = null;
+  let fallingFbx = null;
+  let BreathingIdleFbx = null;
+  let RunningFbx = null;
+  let JumpFbx = null;
+  let WalkingFbx = null;
 
   /**
    * Player Params
@@ -86,12 +99,19 @@ export default (overlayElement, joystick, loadingBarElement) => {
   let wallk = null;
   let currentAction = null;
   let fadingSpeed = 0.2;
+  // let playerGLTF = null;
+  let gltfLoader = null;
 
   /**
    * Setup Variables
    */
-  let player, Map, collider, houses, signs, mapMixer;
+  let playerNameMesh, player, Map, collider, houses, signs, mapMixer;
   let buyArea = [];
+
+  const handleTypingState = () => {
+    typing.value = !typing.value;
+    console.log("typing.value :>> ", typing.value);
+  };
 
   const playJumpForward = () => {
     currentAction.fadeOut(fadingSpeed);
@@ -378,14 +398,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
     if (player.position.y < -25) {
       reset(camera, controls);
     }
-
-    if (socket) {
-      socket.emit("move", {
-        position: [player.position.x, player.position.y, player.position.z],
-        rotation: [player.rotation.x, player.rotation.y, player.rotation.z],
-        state: currentAction._clip.name,
-      });
-    }
   };
 
   let up = true;
@@ -412,9 +424,24 @@ export default (overlayElement, joystick, loadingBarElement) => {
       controls.maxDistance = 10;
     }
 
-    if (collider && houseDetails.value === false) {
+    if (player && collider && houseDetails.value === false) {
       for (let i = 0; i < physicsSteps; i++) {
         updatePlayer(deltaTime / physicsSteps);
+        if (globalSocket.value) {
+          globalSocket.value.emit("move", {
+            position: [player.position.x, player.position.y, player.position.z],
+            rotation: [player.rotation.x, player.rotation.y, player.rotation.z],
+            state: currentAction._clip.name,
+          });
+        }
+        if (playerNameMesh && playerNameMesh.position) {
+          playerNameMesh.position.set(
+            player.position.x,
+            player.position.y + 1,
+            player.position.z
+          );
+          playerNameMesh.rotation.y = controls.getAzimuthalAngle();
+        }
       }
     }
 
@@ -499,62 +526,66 @@ export default (overlayElement, joystick, loadingBarElement) => {
   };
 
   window.addEventListener("keydown", (e) => {
-    switch (e.code) {
-      case "KeyW":
-        playerDirection.up = true;
-        playWallkingRunning();
-        break;
-      case "KeyS":
-        playerDirection.down = true;
-        playWallkingRunning();
-        break;
-      case "KeyD":
-        playerDirection.right = true;
-        playWallkingRunning();
-        break;
-      case "KeyA":
-        playerDirection.left = true;
-        playWallkingRunning();
-        break;
-      case "ShiftLeft":
-        running = true;
-        playWallkingRunning();
-        break;
-      case "Space":
-        if (playerIsOnGround) {
-          playerVelocity.y = 10.0;
-          playJumpForward();
-        }
-        break;
+    if (!typing.value) {
+      switch (e.code) {
+        case "KeyW":
+          playerDirection.up = true;
+          playWallkingRunning();
+          break;
+        case "KeyS":
+          playerDirection.down = true;
+          playWallkingRunning();
+          break;
+        case "KeyD":
+          playerDirection.right = true;
+          playWallkingRunning();
+          break;
+        case "KeyA":
+          playerDirection.left = true;
+          playWallkingRunning();
+          break;
+        case "ShiftLeft":
+          running = true;
+          playWallkingRunning();
+          break;
+        case "Space":
+          if (playerIsOnGround) {
+            playerVelocity.y = 10.0;
+            playJumpForward();
+          }
+          break;
+      }
     }
   });
 
   window.addEventListener("keyup", (e) => {
-    switch (e.code) {
-      case "KeyW":
-        playerDirection.up = false;
-        break;
-      case "KeyS":
-        playerDirection.down = false;
-        break;
-      case "KeyD":
-        playerDirection.right = false;
-        break;
-      case "KeyA":
-        playerDirection.left = false;
-        break;
-      case "ShiftLeft":
-        running = false;
-        playWallkingRunning();
-        break;
-      case "Enter":
-        interact();
-        break;
-      case "KeyR":
-        reset(camera, controls);
-        break;
+    if (!typing.value) {
+      switch (e.code) {
+        case "KeyW":
+          playerDirection.up = false;
+          break;
+        case "KeyS":
+          playerDirection.down = false;
+          break;
+        case "KeyD":
+          playerDirection.right = false;
+          break;
+        case "KeyA":
+          playerDirection.left = false;
+          break;
+        case "ShiftLeft":
+          running = false;
+          playWallkingRunning();
+          break;
+        case "Enter":
+          interact();
+          break;
+        case "KeyR":
+          reset(camera, controls);
+          break;
+      }
+      stopState();
     }
-    stopState();
   });
 
   onMounted(() => {
@@ -615,6 +646,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
   const container = ref({});
   const loading = ref(true);
+  const gettingName = ref(false);
   const balance = ref(1000000);
   const celebrate = ref(false);
   const hitSound = new Audio(require("../assets/AudioBuy.mp3"));
@@ -693,266 +725,434 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
   const loadingManager = new THREE.LoadingManager(
     () => {
-      scene.add(player);
-      scene.add(Map);
-      renderer.shadowMap.autoUpdate = false;
-      renderer.shadowMap.needsUpdate = true;
-
-      overlayElement.value.classList.add("ended");
-      camera.position.add(player.position);
-      controls.update();
-      gsap
-        .timeline({
-          paused: false,
-          defaults: { duration: 2.23 },
-        })
-        .to(".overlay", { opacity: 0 })
-        .then(() => {
-          loading.value = false;
-          falling.fadeOut(0.05);
-          stand.reset().fadeIn(0.05).play();
-          currentAction = stand;
-        });
+      loading.value = false;
     },
     (itemUrl, itemsLoaded, itemsTotal) => {
-      const progressRatio = itemsLoaded / itemsTotal;
-      loadingBarElement.value.style.transform = `scaleX(${progressRatio})`;
+      if (loading.value) {
+        const progressRatio = itemsLoaded / itemsTotal;
+        loadingBarElement.value.style.transform = `scaleX(${progressRatio})`;
+      }
     },
     () => {
       console.log("error");
     }
   );
   loadResources(loadingManager, THREE, MeshBVH, (data) => {
-    player = data.player;
     Map = data.Map;
     collider = data.collider;
     houses = data.houses;
     buyArea = data.buyArea;
     signs = data.signs;
     mapMixer = data.mapMixer;
-    playerMixer = data.playerMixer;
-    falling = data.falling;
-    stand = data.stand;
-    jumpForward = data.jumpForward;
-    runing = data.runing;
-    wallk = data.wallk;
-    currentAction = data.currentAction;
-    // playerGLTF=data.playerGLTF
-    socket = io("http://localhost:3000", {
-      transports: ["websocket", "polling", "flashsocket"],
-    });
-
-    //On connection server sends the client his ID
-    socket.on("introduction", (_id, _clientNum, _ids) => {
-      for (let i = 0; i < _ids.length; i++) {
-        if (_ids[i] != _id) {
-          const newPlayer = SkeletonUtils.clone(player);
-          clients[_ids[i]] = {
-            mesh: newPlayer,
-          };
-
-          clients[_ids[i]].mixer = new THREE.AnimationMixer(
-            clients[_ids[i]].mesh
-          );
-          clients[_ids[i]].falling = clients[_ids[i]].mixer.clipAction(
-            data.playerGLTF.animations[1],
-            clients[_ids[i]].mesh
-          );
-          clients[_ids[i]].stand = playerMixer.clipAction(
-            data.playerGLTF.animations[2],
-            clients[_ids[i]].mesh
-          );
-          clients[_ids[i]].jumpForward = playerMixer.clipAction(
-            data.playerGLTF.animations[3],
-            clients[_ids[i]].mesh
-          );
-          clients[_ids[i]].runing = playerMixer.clipAction(
-            data.playerGLTF.animations[4],
-            clients[_ids[i]].mesh
-          );
-          clients[_ids[i]].wallk = playerMixer.clipAction(
-            data.playerGLTF.animations[5],
-            clients[_ids[i]].mesh
-          );
-
-          //Add initial users to the scene
-          scene.add(clients[_ids[i]].mesh);
-        }
-      }
-      id = _id;
-    });
-
-    socket.on("newUserConnected", (clientCount, _id, _ids) => {
-      console.log(clientCount + " clients connected");
-      let alreadyHasUser = false;
-      for (let i = 0; i < Object.keys(clients).length; i++) {
-        if (Object.keys(clients)[i] == _id) {
-          alreadyHasUser = true;
-          break;
-        }
-      }
-      if (_id != id && !alreadyHasUser) {
-        const newPlayer = SkeletonUtils.clone(player);
-
-        clients[_id] = {
-          mesh: newPlayer,
-        };
-
-        clients[_id].mixer = new THREE.AnimationMixer(clients[_id].mesh);
-        clients[_id].falling = clients[_id].mixer.clipAction(
-          data.playerGLTF.animations[1],
-          clients[_id].mesh
-        );
-        clients[_id].stand = playerMixer.clipAction(
-          data.playerGLTF.animations[2],
-          clients[_id].mesh
-        );
-        clients[_id].jumpForward = playerMixer.clipAction(
-          data.playerGLTF.animations[3],
-          clients[_id].mesh
-        );
-        clients[_id].runing = playerMixer.clipAction(
-          data.playerGLTF.animations[4],
-          clients[_id].mesh
-        );
-        clients[_id].wallk = playerMixer.clipAction(
-          data.playerGLTF.animations[5],
-          clients[_id].mesh
-        );
-        console.log("clients[_ids[i]] :>> ", clients[_id]);
-
-        //Add initial users to the scene
-        scene.add(clients[_id].mesh);
-      }
-    });
-
-    socket.on("userDisconnected", (clientCount, _id, _ids) => {
-      //Update the data from the server
-      // document.getElementById("numUsers").textContent = clientCount;
-
-      if (_id != id) {
-        console.log("A user disconnected with the id: " + _id);
-        scene.remove(clients[_id].mesh);
-        delete clients[_id];
-      }
-    });
-
-    socket.on("connect", () => {});
-
-    //Update when one of the users moves in space
-    socket.on("userPositions", (_clientProps) => {
-      // console.log("Positions of all users are ", _clientProps, id);
-      // console.log(Object.keys(_clientProps)[0] == id);
-      for (let i = 0; i < Object.keys(_clientProps).length; i++) {
-        if (Object.keys(_clientProps)[i] != id) {
-          const otherPlayerState =
-            _clientProps[Object.keys(_clientProps)[i]].state;
-          // console.log(
-          //   "otherPlayerState :>> ",
-          //   clients[Object.keys(_clientProps)[i]]
-          // );
-
-          if (otherPlayerState === "idle") {
-            clients[Object.keys(_clientProps)[i]].falling.stop();
-            clients[Object.keys(_clientProps)[i]].jumpForward.stop();
-            clients[Object.keys(_clientProps)[i]].runing.stop();
-            clients[Object.keys(_clientProps)[i]].wallk.stop();
-            clients[Object.keys(_clientProps)[i]].stand.play();
-          }
-
-          if (otherPlayerState === "walking") {
-            clients[Object.keys(_clientProps)[i]].falling.stop();
-            clients[Object.keys(_clientProps)[i]].jumpForward.stop();
-            clients[Object.keys(_clientProps)[i]].runing.stop();
-            clients[Object.keys(_clientProps)[i]].wallk.play();
-            clients[Object.keys(_clientProps)[i]].stand.stop();
-          }
-
-          if (otherPlayerState === "running") {
-            clients[Object.keys(_clientProps)[i]].falling.stop();
-            clients[Object.keys(_clientProps)[i]].jumpForward.stop();
-            clients[Object.keys(_clientProps)[i]].runing.play();
-            clients[Object.keys(_clientProps)[i]].wallk.stop();
-            clients[Object.keys(_clientProps)[i]].stand.stop();
-          }
-
-          if (otherPlayerState === "falling") {
-            clients[Object.keys(_clientProps)[i]].falling.play();
-            clients[Object.keys(_clientProps)[i]].jumpForward.stop();
-            clients[Object.keys(_clientProps)[i]].runing.stop();
-            clients[Object.keys(_clientProps)[i]].wallk.stop();
-            clients[Object.keys(_clientProps)[i]].stand.stop();
-          }
-
-          if (otherPlayerState === "jumpForward") {
-            clients[Object.keys(_clientProps)[i]].falling.stop();
-            clients[Object.keys(_clientProps)[i]].jumpForward.play();
-            clients[Object.keys(_clientProps)[i]].runing.stop();
-            clients[Object.keys(_clientProps)[i]].wallk.stop();
-            clients[Object.keys(_clientProps)[i]].stand.stop();
-          }
-
-          //Store the position
-
-          let oldPosition = clients[Object.keys(_clientProps)[i]].mesh.position;
-          let newPosition = _clientProps[Object.keys(_clientProps)[i]].position;
-          //Create a vector 3 and lerp the new position with the old position
-          let lerpedPosition = new THREE.Vector3();
-          lerpedPosition.x = THREE.Math.lerp(
-            oldPosition.x,
-            newPosition[0],
-            0.3
-          );
-          lerpedPosition.y = THREE.Math.lerp(
-            oldPosition.y,
-            newPosition[1],
-            0.3
-          );
-          lerpedPosition.z = THREE.Math.lerp(
-            oldPosition.z,
-            newPosition[2],
-            0.3
-          );
-
-          //Set the position
-          clients[Object.keys(_clientProps)[i]].mesh.position.set(
-            lerpedPosition.x,
-            lerpedPosition.y,
-            lerpedPosition.z
-          );
-
-          //Store the rotation
-          let oldRotation = clients[Object.keys(_clientProps)[i]].mesh.rotation;
-          let newRotation = _clientProps[Object.keys(_clientProps)[i]].rotation;
-
-          //Create a vector 3 and lerp the new rotation with the old rotation
-          let lerpedRotation = new THREE.Vector3();
-          lerpedRotation.x = THREE.Math.lerp(
-            oldRotation.x,
-            newRotation[0],
-            0.3
-          );
-          lerpedRotation.y = THREE.Math.lerp(
-            oldRotation.y,
-            newRotation[1],
-            0.3
-          );
-          lerpedRotation.z = THREE.Math.lerp(
-            oldRotation.z,
-            newRotation[2],
-            0.3
-          );
-          //Set the position
-          clients[Object.keys(_clientProps)[i]].mesh.rotation.set(
-            lerpedRotation.x,
-            lerpedRotation.y,
-            lerpedRotation.z
-          );
-        }
-      }
-    });
+    gltfLoader = data.gltfLoader;
+    fallingFbx = data.fallingFbx;
+    BreathingIdleFbx = data.BreathingIdleFbx;
+    RunningFbx = data.RunningFbx;
+    JumpFbx = data.JumpFbx;
+    WalkingFbx = data.WalkingFbx;
+    gettingName.value = true;
   });
+  const start = () => {
+    /**
+     * Player Setup
+     */
+    gltfLoader.load(localStorage.avatarName, (readyPlayer) => {
+      player = readyPlayer.scene;
+      // player.scale.set(0.01, 0.01, 0.01);
+      player.playerInfo = {
+        radius: 0.5,
+        segment: new THREE.Line3(
+          new THREE.Vector3(),
+          new THREE.Vector3(0, -1.0, 0.0)
+        ),
+      };
 
+      player.position.set(0, -100, 120);
+
+      player.children[0].translateY(-1.5);
+      player.children[0].rotateY(Math.PI / 2);
+
+      player.children[0].rotateZ(-Math.PI);
+
+      player.children[0].castShadow = false;
+      player.children[0].receiveShadow = false;
+
+      playerMixer = new THREE.AnimationMixer(player);
+      falling = playerMixer.clipAction(fallingFbx.animations[0]);
+      stand = playerMixer.clipAction(BreathingIdleFbx.animations[0]);
+      jumpForward = playerMixer.clipAction(JumpFbx.animations[0]);
+      runing = playerMixer.clipAction(RunningFbx.animations[0]);
+      wallk = playerMixer.clipAction(WalkingFbx.animations[0]);
+      falling.play();
+      currentAction = falling;
+      const loader = new FontLoader();
+      loader.load("/fonts/helvetiker_regular.typeface.json", (font) => {
+        const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        // const originalPlayer = SkeletonUtils.clone(player);
+        localStorage.playerName = playerName.value;
+
+        const textGeometry = new TextGeometry(playerName.value, {
+          font: font,
+          size: 0.2,
+          height: 0.01,
+          curveSegments: 2,
+          bevelEnabled: true,
+          bevelThickness: 0.003,
+          bevelSize: 0.002,
+          bevelOffset: 0,
+          bevelSegments: 1,
+        });
+        textGeometry.center();
+
+        playerNameMesh = new THREE.Mesh(textGeometry, material);
+        playerNameMesh.translateY(0.6);
+
+        scene.add(playerNameMesh);
+        scene.add(player);
+        scene.add(Map);
+        renderer.shadowMap.autoUpdate = false;
+        renderer.shadowMap.needsUpdate = true;
+        camera.position.add(player.position);
+        controls.update();
+        overlayElement.value.classList.add("ended");
+
+        globalSocket.value = io("http://localhost:3000", {
+          transports: ["websocket", "polling", "flashsocket"],
+        });
+        gettingName.value = false;
+        gsap
+          .timeline({
+            paused: false,
+            defaults: { duration: 2.23 },
+          })
+          .to(".overlay", { opacity: 0 })
+          .then(() => {
+            falling.fadeOut(0.05);
+            stand.reset().fadeIn(0.05).play();
+            currentAction = stand;
+          });
+
+        // https://pacific-island-87082.herokuapp.com/
+        console.log("globalSocket :>> ", globalSocket);
+        globalSocket.value.emit("send-name", {
+          playerName: playerName.value,
+          avatarName: localStorage.avatarName,
+        });
+
+        //On connection server sends the client his ID
+        globalSocket.value.on(
+          "introduction",
+          (_id, _clientNum, _ids, _clientProps) => {
+            for (let i = 0; i < _ids.length; i++) {
+              if (_ids[i] != _id) {
+                gltfLoader.load(
+                  _clientProps[_ids[i]].avatar,
+                  (newPlayerGltf) => {
+                    const newPlayer = newPlayerGltf.scene;
+                    newPlayer.playerInfo = {
+                      radius: 0.5,
+                      segment: new THREE.Line3(
+                        new THREE.Vector3(),
+                        new THREE.Vector3(0, -1.0, 0.0)
+                      ),
+                    };
+
+                    newPlayer.position.set(0, -17, 120);
+
+                    newPlayer.children[0].translateY(-1.5);
+                    newPlayer.children[0].rotateY(Math.PI / 2);
+
+                    newPlayer.children[0].rotateZ(-Math.PI);
+                    newPlayer.children[0].castShadow = false;
+                    newPlayer.children[0].receiveShadow = false;
+                    const newPlayertextGeometry = new TextGeometry(
+                      _clientProps[_ids[i]].name,
+                      {
+                        font: font,
+                        size: 0.2,
+                        height: 0.01,
+                        curveSegments: 2,
+                        bevelEnabled: true,
+                        bevelThickness: 0.003,
+                        bevelSize: 0.002,
+                        bevelOffset: 0,
+                        bevelSegments: 1,
+                      }
+                    );
+                    newPlayertextGeometry.center();
+
+                    const newPlayerText = new THREE.Mesh(
+                      newPlayertextGeometry,
+                      material
+                    );
+                    newPlayerText.translateY(0.6);
+
+                    clients[_ids[i]] = {
+                      mesh: newPlayer,
+                      nameMesh: newPlayerText,
+                    };
+
+                    clients[_ids[i]].mixer = new THREE.AnimationMixer(
+                      clients[_ids[i]].mesh
+                    );
+                    clients[_ids[i]].falling = clients[
+                      _ids[i]
+                    ].mixer.clipAction(
+                      fallingFbx.animations[0],
+                      clients[_ids[i]].mesh
+                    );
+                    clients[_ids[i]].stand = playerMixer.clipAction(
+                      BreathingIdleFbx.animations[0],
+                      clients[_ids[i]].mesh
+                    );
+                    clients[_ids[i]].jumpForward = playerMixer.clipAction(
+                      JumpFbx.animations[0],
+                      clients[_ids[i]].mesh
+                    );
+                    clients[_ids[i]].runing = playerMixer.clipAction(
+                      RunningFbx.animations[0],
+                      clients[_ids[i]].mesh
+                    );
+                    clients[_ids[i]].wallk = playerMixer.clipAction(
+                      WalkingFbx.animations[0],
+                      clients[_ids[i]].mesh
+                    );
+
+                    //Add initial users to the scene
+                    scene.add(clients[_ids[i]].mesh);
+                    scene.add(clients[_ids[i]].nameMesh);
+                  }
+                );
+              }
+            }
+            id = _id;
+          }
+        );
+
+        globalSocket.value.on(
+          "newUserConnected",
+          (clientCount, _id, _ids, _clientProps) => {
+            let alreadyHasUser = false;
+            for (let i = 0; i < Object.keys(clients).length; i++) {
+              if (Object.keys(clients)[i] == _id) {
+                alreadyHasUser = true;
+                break;
+              }
+            }
+            if (_id != id && !alreadyHasUser) {
+              gltfLoader.load(_clientProps[_id].avatar, (newPlayerGltf) => {
+                const newPlayer = newPlayerGltf.scene;
+                newPlayer.playerInfo = {
+                  radius: 0.5,
+                  segment: new THREE.Line3(
+                    new THREE.Vector3(),
+                    new THREE.Vector3(0, -1.0, 0.0)
+                  ),
+                };
+
+                newPlayer.position.set(0, -17, 120);
+
+                newPlayer.children[0].translateY(-1.5);
+                newPlayer.children[0].rotateY(Math.PI / 2);
+                newPlayer.children[0].rotateZ(-Math.PI);
+
+                newPlayer.children[0].castShadow = false;
+                newPlayer.children[0].receiveShadow = false;
+                const newPlayertextGeometry = new TextGeometry(
+                  _clientProps[_id].name,
+                  {
+                    font: font,
+                    size: 0.2,
+                    height: 0.01,
+                    curveSegments: 2,
+                    bevelEnabled: true,
+                    bevelThickness: 0.003,
+                    bevelSize: 0.002,
+                    bevelOffset: 0,
+                    bevelSegments: 1,
+                  }
+                );
+                newPlayertextGeometry.center();
+                const newPlayerText = new THREE.Mesh(
+                  newPlayertextGeometry,
+                  material
+                );
+                newPlayerText.translateY(0.6);
+
+                clients[_id] = {
+                  mesh: newPlayer,
+                  nameMesh: newPlayerText,
+                };
+
+                clients[_id].mixer = new THREE.AnimationMixer(
+                  clients[_id].mesh
+                );
+                clients[_id].falling = clients[_id].mixer.clipAction(
+                  fallingFbx.animations[0],
+                  clients[_id].mesh
+                );
+                clients[_id].stand = playerMixer.clipAction(
+                  BreathingIdleFbx.animations[0],
+                  clients[_id].mesh
+                );
+                clients[_id].jumpForward = playerMixer.clipAction(
+                  JumpFbx.animations[0],
+                  clients[_id].mesh
+                );
+                clients[_id].runing = playerMixer.clipAction(
+                  RunningFbx.animations[0],
+                  clients[_id].mesh
+                );
+                clients[_id].wallk = playerMixer.clipAction(
+                  WalkingFbx.animations[0],
+                  clients[_id].mesh
+                );
+
+                //Add initial users to the scene
+                scene.add(clients[_id].mesh);
+                scene.add(clients[_id].nameMesh);
+              });
+            }
+          }
+        );
+
+        globalSocket.value.on("userDisconnected", (clientCount, _id, _ids) => {
+          //Update the data from the server
+          // document.getElementById("numUsers").textContent = clientCount;
+
+          if (_id != id) {
+            scene.remove(clients[_id].mesh);
+            scene.remove(clients[_id].nameMesh);
+
+            delete clients[_id];
+          }
+        });
+
+        globalSocket.value.on("connect", () => {});
+
+        //Update when one of the users moves in space
+        globalSocket.value.on("userPositions", (_clientProps) => {
+          for (let i = 0; i < Object.keys(_clientProps).length; i++) {
+            if (Object.keys(_clientProps)[i] != id) {
+              const otherPlayerState =
+                _clientProps[Object.keys(_clientProps)[i]].state;
+              console.log("otherPlayerState :>> ", otherPlayerState);
+              if (otherPlayerState === "stand") {
+                clients[Object.keys(_clientProps)[i]].falling.stop();
+                clients[Object.keys(_clientProps)[i]].jumpForward.stop();
+                clients[Object.keys(_clientProps)[i]].runing.stop();
+                clients[Object.keys(_clientProps)[i]].wallk.stop();
+                clients[Object.keys(_clientProps)[i]].stand.play();
+              }
+
+              if (otherPlayerState === "walking") {
+                clients[Object.keys(_clientProps)[i]].falling.stop();
+                clients[Object.keys(_clientProps)[i]].jumpForward.stop();
+                clients[Object.keys(_clientProps)[i]].runing.stop();
+                clients[Object.keys(_clientProps)[i]].wallk.play();
+                clients[Object.keys(_clientProps)[i]].stand.stop();
+              }
+
+              if (otherPlayerState === "running") {
+                clients[Object.keys(_clientProps)[i]].falling.stop();
+                clients[Object.keys(_clientProps)[i]].jumpForward.stop();
+                clients[Object.keys(_clientProps)[i]].runing.play();
+                clients[Object.keys(_clientProps)[i]].wallk.stop();
+                clients[Object.keys(_clientProps)[i]].stand.stop();
+              }
+
+              if (otherPlayerState === "falling") {
+                clients[Object.keys(_clientProps)[i]].falling.play();
+                clients[Object.keys(_clientProps)[i]].jumpForward.stop();
+                clients[Object.keys(_clientProps)[i]].runing.stop();
+                clients[Object.keys(_clientProps)[i]].wallk.stop();
+                clients[Object.keys(_clientProps)[i]].stand.stop();
+              }
+
+              if (otherPlayerState === "jumpForward") {
+                clients[Object.keys(_clientProps)[i]].falling.stop();
+                clients[Object.keys(_clientProps)[i]].jumpForward.play();
+                clients[Object.keys(_clientProps)[i]].runing.stop();
+                clients[Object.keys(_clientProps)[i]].wallk.stop();
+                clients[Object.keys(_clientProps)[i]].stand.stop();
+              }
+
+              //Store the position
+
+              let oldPosition =
+                clients[Object.keys(_clientProps)[i]].mesh.position;
+              let newPosition =
+                _clientProps[Object.keys(_clientProps)[i]].position;
+              //Create a vector 3 and lerp the new position with the old position
+              let lerpedPosition = new THREE.Vector3();
+              lerpedPosition.x = THREE.Math.lerp(
+                oldPosition.x,
+                newPosition[0],
+                0.3
+              );
+              lerpedPosition.y = THREE.Math.lerp(
+                oldPosition.y,
+                newPosition[1],
+                0.3
+              );
+              lerpedPosition.z = THREE.Math.lerp(
+                oldPosition.z,
+                newPosition[2],
+                0.3
+              );
+
+              //Set the position
+              clients[Object.keys(_clientProps)[i]].mesh.position.set(
+                lerpedPosition.x,
+                lerpedPosition.y,
+                lerpedPosition.z
+              );
+
+              clients[Object.keys(_clientProps)[i]].nameMesh.quaternion.copy(
+                camera.quaternion
+              );
+
+              clients[Object.keys(_clientProps)[i]].nameMesh.position.set(
+                clients[Object.keys(_clientProps)[i]].mesh.position.x,
+                clients[Object.keys(_clientProps)[i]].mesh.position.y + 1,
+                clients[Object.keys(_clientProps)[i]].mesh.position.z
+              );
+
+              //Store the rotation
+              let oldRotation =
+                clients[Object.keys(_clientProps)[i]].mesh.rotation;
+              let newRotation =
+                _clientProps[Object.keys(_clientProps)[i]].rotation;
+
+              //Create a vector 3 and lerp the new rotation with the old rotation
+              let lerpedRotation = new THREE.Vector3();
+              lerpedRotation.x = THREE.Math.lerp(
+                oldRotation.x,
+                newRotation[0],
+                0.3
+              );
+              lerpedRotation.y = THREE.Math.lerp(
+                oldRotation.y,
+                newRotation[1],
+                0.3
+              );
+              lerpedRotation.z = THREE.Math.lerp(
+                oldRotation.z,
+                newRotation[2],
+                0.3
+              );
+              //Set the position
+              clients[Object.keys(_clientProps)[i]].mesh.rotation.set(
+                lerpedRotation.x,
+                lerpedRotation.y,
+                lerpedRotation.z
+              );
+            }
+          }
+        });
+      });
+    });
+  };
   render();
 
   return {
@@ -974,6 +1174,11 @@ export default (overlayElement, joystick, loadingBarElement) => {
     triggerRun,
     running,
     triggerJump,
+    start,
+    gettingName,
+    playerName,
+    globalSocket,
+    handleTypingState,
   };
 };
 

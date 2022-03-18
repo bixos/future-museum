@@ -4,7 +4,6 @@
     <div
       v-if="loading"
       class="overlay"
-      ref="overlayElement"
       :class="
         deviceType() === 'desktop'
           ? 'desktop-background-loading'
@@ -21,6 +20,28 @@
         <span class="loading-span">LOADING</span>
       </div>
     </div>
+    <div
+      ref="overlayElement"
+      class="overlay"
+      :class="
+        deviceType() === 'desktop'
+          ? 'desktop-background-loading'
+          : 'mobile-background-loading'
+      "
+      v-if="gettingName"
+    >
+      <div class="name-container">
+        <input v-model="playerName" type="text" />
+        <button @click="start()">Jump</button>
+      </div>
+    </div>
+
+    <iframe
+      ref="frameContainer"
+      class="frame"
+      allow="camera *; microphone *"
+      v-show="gettingName"
+    ></iframe>
 
     <div v-if="deviceType() === 'desktop'" class="logo-home">
       <a href="https://bixos.io/" target="_blank" rel="noopener noreferrer">
@@ -132,7 +153,11 @@
       autoplay
     ></lottie-player>
 
-    <KeysHelper v-if="deviceType() === 'desktop'" />
+    <KeysHelper
+      v-if="deviceType() === 'desktop' && globalSocket"
+      :socket="globalSocket"
+      @handleTypingState="handleTypingState()"
+    />
     <MobileActions
       :interactHint="interactHint"
       @onReset="reset(camera, controls)"
@@ -176,7 +201,7 @@
 </template>
 
 <script>
-import { ref, defineComponent } from "vue";
+import { ref, onMounted, defineComponent } from "vue";
 
 import Drawer from "./components/Drawer.vue";
 import KeysHelper from "./components/KeysHelper.vue";
@@ -192,14 +217,69 @@ import Instagram from "./assets/icons/Instagram.svg";
 
 import experience from "./experience/experience";
 
-export default defineComponent({
+export default {
   name: "App",
   components: { Drawer, KeysHelper, MobileActions, HouseModel },
 
   setup() {
+    const subdomain = "bixosio"; // Replace with your custom subdomain
+    const frameContainer = ref(null);
+
     const overlayElement = ref({});
     const joystick = ref({});
     const loadingBarElement = ref({});
+    onMounted(() => {
+      // https://bixosio.readyplayer.me/
+      frameContainer.value.src = `https://${subdomain}.readyplayer.me/avatar?frameApi=true`;
+      window.addEventListener("message", subscribe);
+      document.addEventListener("message", subscribe);
+
+      function subscribe(event) {
+        const json = parse(event);
+        if (json?.source !== "readyplayerme") {
+          return;
+        }
+
+        // Susbribe to all events sent from Ready Player Me once frame is ready
+        if (json.eventName === "v1.frame.ready") {
+          frameContainer.value.contentWindow.postMessage(
+            JSON.stringify({
+              target: "readyplayerme",
+              type: "subscribe",
+              eventName: "v1.**",
+            }),
+            "*"
+          );
+        }
+
+        // Get avatar GLB URL
+        if (json.eventName === "v1.avatar.exported") {
+          localStorage.avatarName = json.data.url;
+          start();
+        }
+
+        // Get user id
+        if (json.eventName === "v1.user.set") {
+          console.log(
+            `User with id ${json.data.id} set: ${JSON.stringify(json)}`
+          );
+        }
+      }
+
+      function parse(event) {
+        try {
+          return JSON.parse(event.data);
+        } catch (error) {
+          return null;
+        }
+      }
+
+      function displayIframe() {
+        console.log("frame.value :>> ", frameContainer.value);
+        frameContainer.value.hidden = false;
+      }
+      displayIframe();
+    });
 
     const {
       loading,
@@ -217,7 +297,13 @@ export default defineComponent({
       controls,
       triggerRun,
       triggerJump,
+      start,
+      gettingName,
+      playerName,
+      globalSocket,
+      handleTypingState,
     } = experience(overlayElement, joystick, loadingBarElement);
+
     return {
       joystick,
       loading,
@@ -237,6 +323,12 @@ export default defineComponent({
       controls,
       triggerRun,
       triggerJump,
+      start,
+      gettingName,
+      playerName,
+      frameContainer,
+      globalSocket,
+      handleTypingState,
     };
   },
   data() {
@@ -298,7 +390,7 @@ export default defineComponent({
   mounted() {
     this.isMounted = true;
   },
-});
+};
 </script>
 
 <style lang="scss">
@@ -324,6 +416,61 @@ body {
 canvas {
   width: 100%;
   height: 100%;
+}
+.frame {
+  width: 100vw;
+  height: 80vh;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  font-size: 14px;
+  border: none;
+  position: absolute;
+  top: 20vh;
+  z-index: 9999999999999;
+}
+.name-container {
+  height: 20vh;
+  width: 100vw;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  input {
+    height: 30px;
+    border-radius: 6px;
+    outline: none;
+    border: solid 1px #00e8da;
+    color: #1d221c;
+    font-size: 14px;
+    padding-left: 20px;
+    font-weight: 500;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
+  }
+  button {
+    height: 34px;
+    border-radius: 6px;
+    outline: none;
+    border: solid 1px #00e8da;
+    color: #1d221c;
+    font-size: 14px;
+    padding-left: 20px;
+    margin-left: 5px;
+    padding-right: 20px;
+    background: #00e8da;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
+
+    &:active {
+      background: #239eda;
+      color: white;
+    }
+  }
+}
+.warning {
+  background-color: #df68a2;
+  padding: 3px;
+  border-radius: 5px;
+  color: white;
 }
 
 .joystick-container {
