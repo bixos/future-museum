@@ -9,16 +9,35 @@
     />
 
     <div class="house-details-container">
-      <div class="house-header">
-        <img src="../assets/house.png" class="house-img" alt="house" />
+      <div
+        class="house-header"
+        v-touch:swipe.left="previous"
+        v-touch:swipe.right="next"
+      >
+        <img
+          v-for="(item, index) in carouselItems"
+          :key="index"
+          v-show="index === activeItem"
+          :src="
+            house.isBigHouse && index === 0
+              ? require('../assets/house/bigHouse.png')
+              : item.path
+          "
+          :class="['house-img', { 'active-item': index === activeItem }]"
+          :alt="item.alt"
+        />
         <div style="display: flex">
           <img
             src="../assets/icons/Bixos-light.svg"
             style="height: 32px; margin-right: 10px"
-            alt="ixos-light"
+            alt="bixos-light"
           />
 
           <span>{{ house.price.toLocaleString("es-ES") }}</span>
+        </div>
+        <div class="house-carousel">
+          <button class="arrow arrow-right" @click="next"></button>
+          <button class="arrow arrow-left" @click="previous"></button>
         </div>
       </div>
       <div class="tabs">
@@ -48,129 +67,19 @@
         </div>
       </div>
       <div class="house-body">
-        <div class="house-features" v-if="activeTab === 1">
-          <div class="row row-dark">
+        <div class="house-features">
+          <div
+            v-for="(feature, index) in houseFeatures[`tab${activeTab}`]"
+            :key="index"
+            :class="['row', { 'row-dark': index % 2 === 0 }]"
+          >
             <div class="details-label">
-              <p>Listing No</p>
+              <p>{{ feature.title }}</p>
             </div>
-            <div class="details-value" style="font-weight: 900; color: #239eda">
-              <p>: {{ house.number }}</p>
-            </div>
-          </div>
-          <div class="row">
-            <div class="details-label">
-              <p>Announcement Date</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.date }}</p>
-            </div>
-          </div>
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>Property Type</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.type }}</p>
-            </div>
-          </div>
-          <div class="row">
-            <div class="details-label">
-              <p>m² (Gross)</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.m2 }}</p>
-            </div>
-          </div>
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>Building Age</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.age }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="house-features" v-if="activeTab === 2">
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>Number of Rooms</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.rooms }}</p>
-            </div>
-          </div>
-          <div class="row">
-            <div class="details-label">
-              <p>Number of Floors</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.floors }}</p>
-            </div>
-          </div>
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>Heating</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.heating }}</p>
-            </div>
-          </div>
-          <div class="row">
-            <div class="details-label">
-              <p>Number of Bathrooms</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.bathrooms }}</p>
-            </div>
-          </div>
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>Furnished</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.furnished }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="house-features" v-if="activeTab === 3">
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>Usage Status</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.status }}</p>
-            </div>
-          </div>
-          <div class="row">
-            <div class="details-label">
-              <p>Inside Cite</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.cite }}</p>
-            </div>
-          </div>
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>Dues (TL)</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.dues }}</p>
-            </div>
-          </div>
-          <div class="row">
-            <div class="details-label">
-              <p>Deed Status</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.deed }}</p>
-            </div>
-          </div>
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>From</p>
-            </div>
-            <div class="details-value" style="font-weight: 900; color: #239eda">
-              <p>: {{ house.Owner }}</p>
+            <div
+              :class="['details-value', { 'active-feature': feature.isActive }]"
+            >
+              <p>: {{ house[feature.value] }}</p>
             </div>
           </div>
         </div>
@@ -196,7 +105,7 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 
 export default {
   props: ["house"],
@@ -213,8 +122,80 @@ export default {
     const onSellHouse = () => {
       emit("onSellHouse");
     };
+    onMounted(() => {
+      window.addEventListener("keyup", (e) => {
+        if (e.code && e.code === "Escape") {
+          onHideModel();
+        }
+      });
+    });
 
-    return { activeTab, onHideModel, onBuyHouse, onSellHouse };
+    const houseFeatures = ref({
+      tab1: [
+        { title: "Listing No", value: "number", isActive: true },
+        { title: "Announcement Date", value: "date" },
+        { title: "Property Type", value: "type" },
+        { title: "m² (Gross)", value: "m2" },
+        { title: "Building Age", value: "age" },
+      ],
+      tab2: [
+        { title: "Number of Rooms", value: "rooms" },
+        { title: "Number of Floors", value: "floors" },
+        { title: "Heating", value: "heating" },
+        { title: "Number of Bathrooms", value: "bathrooms" },
+        { title: "Furnished", value: "furnished" },
+      ],
+      tab3: [
+        { title: "Inside Cite", value: "cite" },
+        { title: "Dues (TL)", value: "dues" },
+        { title: "Deed Status", value: "deed" },
+        { title: "From", value: "Owner", isActive: true },
+      ],
+    });
+
+    const carouselItems = ref([
+      {
+        path: require("../assets/house/house.png"),
+        alt: "house",
+      },
+      {
+        path: require("../assets/house/bedroom.png"),
+        alt: "bedroom",
+      },
+      {
+        path: require("../assets/house/kitchen.png"),
+        alt: "kitchen",
+      },
+      {
+        path: require("../assets/house/saloon.png"),
+        alt: "saloon",
+      },
+    ]);
+    const activeCarouselItem = ref(carouselItems.value[0]);
+    const activeItem = ref(0);
+    const next = () => {
+      if (activeItem.value <= carouselItems.value.length - 2)
+        activeItem.value += 1;
+      else activeItem.value = 0;
+      activeCarouselItem.value = carouselItems.value[activeItem.value];
+    };
+    const previous = () => {
+      if (activeItem.value !== 0) activeItem.value -= 1;
+      else activeItem.value = carouselItems.value.length - 1;
+      activeCarouselItem.value = carouselItems.value[activeItem.value];
+    };
+
+    return {
+      activeTab,
+      onHideModel,
+      onBuyHouse,
+      onSellHouse,
+      houseFeatures,
+      activeItem,
+      carouselItems,
+      next,
+      previous,
+    };
   },
 };
 </script>
@@ -269,6 +250,12 @@ export default {
       .house-img {
         position: absolute;
         top: -60px;
+        max-height: 190px;
+        -webkit-animation: fadeIn 0.5s ease-in-out; /* Safari, Chrome and Opera > 12.1 */
+        -moz-animation: fadeIn 0.5s ease-in-out; /* Firefox < 16 */
+        -ms-animation: fadeIn 0.5s ease-in-out; /* Internet Explorer */
+        -o-animation: fadeIn 0.5s ease-in-out; /* Opera < 12.1 */
+        animation: fadeIn 0.5s ease-in-out;
       }
       span {
         font-weight: 900;
@@ -276,6 +263,30 @@ export default {
         line-height: 35px;
         color: #ffffff;
         margin-bottom: 10px;
+      }
+      .arrow {
+        border: solid white;
+        border-width: 0px 6px 6px 0;
+        display: inline-block;
+        padding: 3px;
+        position: absolute;
+        top: 55px;
+        width: 25px;
+        height: 25px;
+        background: transparent;
+        &:hover {
+          cursor: pointer;
+        }
+      }
+      .arrow-right {
+        right: 25px;
+        transform: rotate(-45deg);
+        -webkit-transform: rotate(-45deg);
+      }
+      .arrow-left {
+        left: 25px;
+        transform: rotate(135deg);
+        -webkit-transform: rotate(135deg);
       }
     }
     .house-body {
@@ -317,6 +328,10 @@ export default {
           line-height: 24px;
           color: #627d93;
           width: 40%;
+        }
+        .active-feature {
+          font-weight: 900;
+          color: #239eda;
         }
       }
       .buy-house-button {
@@ -432,6 +447,43 @@ export default {
   border-bottom: #68c2c4 4px solid;
   .tab-text {
     color: #68c2c4;
+  }
+}
+
+// fade animation
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* Firefox < 16 */
+@-moz-keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* Safari, Chrome and Opera > 12.1 */
+@-webkit-keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* Internet Explorer */
+@-ms-keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 </style>
