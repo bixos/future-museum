@@ -18,7 +18,11 @@
           v-for="(item, index) in carouselItems"
           :key="index"
           v-show="index === activeItem"
-          :src="item.path"
+          :src="
+            house.isBigHouse && index === 0
+              ? require('../assets/house/bigHouse.png')
+              : item.path
+          "
           :class="['house-img', { 'active-item': index === activeItem }]"
           :alt="item.alt"
         />
@@ -63,129 +67,19 @@
         </div>
       </div>
       <div class="house-body">
-        <div class="house-features" v-if="activeTab === 1">
-          <div class="row row-dark">
+        <div class="house-features">
+          <div
+            v-for="(feature, index) in houseFeatures[`tab${activeTab}`]"
+            :key="index"
+            :class="['row', { 'row-dark': index % 2 === 0 }]"
+          >
             <div class="details-label">
-              <p>Listing No</p>
+              <p>{{ feature.title }}</p>
             </div>
-            <div class="details-value" style="font-weight: 900; color: #239eda">
-              <p>: {{ house.number }}</p>
-            </div>
-          </div>
-          <div class="row">
-            <div class="details-label">
-              <p>Announcement Date</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.date }}</p>
-            </div>
-          </div>
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>Property Type</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.type }}</p>
-            </div>
-          </div>
-          <div class="row">
-            <div class="details-label">
-              <p>m² (Gross)</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.m2 }}</p>
-            </div>
-          </div>
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>Building Age</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.age }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="house-features" v-if="activeTab === 2">
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>Number of Rooms</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.rooms }}</p>
-            </div>
-          </div>
-          <div class="row">
-            <div class="details-label">
-              <p>Number of Floors</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.floors }}</p>
-            </div>
-          </div>
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>Heating</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.heating }}</p>
-            </div>
-          </div>
-          <div class="row">
-            <div class="details-label">
-              <p>Number of Bathrooms</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.bathrooms }}</p>
-            </div>
-          </div>
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>Furnished</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.furnished }}</p>
-            </div>
-          </div>
-        </div>
-        <div class="house-features" v-if="activeTab === 3">
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>Usage Status</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.status }}</p>
-            </div>
-          </div>
-          <div class="row">
-            <div class="details-label">
-              <p>Inside Cite</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.cite }}</p>
-            </div>
-          </div>
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>Dues (TL)</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.dues }}</p>
-            </div>
-          </div>
-          <div class="row">
-            <div class="details-label">
-              <p>Deed Status</p>
-            </div>
-            <div class="details-value">
-              <p>: {{ house.deed }}</p>
-            </div>
-          </div>
-          <div class="row row-dark">
-            <div class="details-label">
-              <p>From</p>
-            </div>
-            <div class="details-value" style="font-weight: 900; color: #239eda">
-              <p>: {{ house.Owner }}</p>
+            <div
+              :class="['details-value', { 'active-feature': feature.isActive }]"
+            >
+              <p>: {{ house[feature.value] }}</p>
             </div>
           </div>
         </div>
@@ -211,7 +105,7 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 
 export default {
   props: ["house"],
@@ -228,6 +122,37 @@ export default {
     const onSellHouse = () => {
       emit("onSellHouse");
     };
+    onMounted(() => {
+      window.addEventListener("keyup", (e) => {
+        if (e.code && e.code === "Escape") {
+          onHideModel();
+        }
+      });
+    });
+
+    const houseFeatures = ref({
+      tab1: [
+        { title: "Listing No", value: "number", isActive: true },
+        { title: "Announcement Date", value: "date" },
+        { title: "Property Type", value: "type" },
+        { title: "m² (Gross)", value: "m2" },
+        { title: "Building Age", value: "age" },
+      ],
+      tab2: [
+        { title: "Number of Rooms", value: "rooms" },
+        { title: "Number of Floors", value: "floors" },
+        { title: "Heating", value: "heating" },
+        { title: "Number of Bathrooms", value: "bathrooms" },
+        { title: "Furnished", value: "furnished" },
+      ],
+      tab3: [
+        { title: "Inside Cite", value: "cite" },
+        { title: "Dues (TL)", value: "dues" },
+        { title: "Deed Status", value: "deed" },
+        { title: "From", value: "Owner", isActive: true },
+      ],
+    });
+
     const carouselItems = ref([
       {
         path: require("../assets/house/house.png"),
@@ -265,6 +190,7 @@ export default {
       onHideModel,
       onBuyHouse,
       onSellHouse,
+      houseFeatures,
       activeItem,
       carouselItems,
       next,
@@ -324,6 +250,7 @@ export default {
       .house-img {
         position: absolute;
         top: -60px;
+        max-height: 190px;
         -webkit-animation: fadeIn 0.5s ease-in-out; /* Safari, Chrome and Opera > 12.1 */
         -moz-animation: fadeIn 0.5s ease-in-out; /* Firefox < 16 */
         -ms-animation: fadeIn 0.5s ease-in-out; /* Internet Explorer */
@@ -347,9 +274,9 @@ export default {
         width: 25px;
         height: 25px;
         background: transparent;
-      }
-      .arrow:hover {
-        cursor: pointer;
+        &:hover {
+          cursor: pointer;
+        }
       }
       .arrow-right {
         right: 25px;
@@ -401,6 +328,10 @@ export default {
           line-height: 24px;
           color: #627d93;
           width: 40%;
+        }
+        .active-feature {
+          font-weight: 900;
+          color: #239eda;
         }
       }
       .buy-house-button {
