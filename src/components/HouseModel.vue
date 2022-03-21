@@ -18,7 +18,11 @@
           v-for="(item, index) in carouselItems"
           :key="index"
           v-show="index === activeItem"
-          :src="item.path"
+          :src="
+            house.isBigHouse && index === 0
+              ? require('../assets/house/bigHouse.png')
+              : item.path
+          "
           :class="['house-img', { 'active-item': index === activeItem }]"
           :alt="item.alt"
         />
@@ -101,7 +105,7 @@
 </template>
 
 <script>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 
 export default {
   props: ["house"],
@@ -118,6 +122,13 @@ export default {
     const onSellHouse = () => {
       emit("onSellHouse");
     };
+    onMounted(() => {
+      window.addEventListener("keyup", (e) => {
+        if (e.code && e.code === "Escape") {
+          onHideModel();
+        }
+      });
+    });
 
     const houseFeatures = ref({
       tab1: [
@@ -239,6 +250,7 @@ export default {
       .house-img {
         position: absolute;
         top: -60px;
+        max-height: 190px;
         -webkit-animation: fadeIn 0.5s ease-in-out; /* Safari, Chrome and Opera > 12.1 */
         -moz-animation: fadeIn 0.5s ease-in-out; /* Firefox < 16 */
         -ms-animation: fadeIn 0.5s ease-in-out; /* Internet Explorer */

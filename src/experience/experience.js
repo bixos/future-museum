@@ -194,8 +194,20 @@ export default (overlayElement, joystick, loadingBarElement) => {
     }
   };
 
+  const bigHouses = [
+    "area007",
+    "area016",
+    "area024",
+    "area025",
+    "area040",
+    "area041",
+  ];
+
   const interact = () => {
     if (currentIntersect && currentIntersect.name.indexOf("area") !== -1) {
+      if (bigHouses.includes(currentIntersect.name)) {
+        currentIntersect.userData.house.isBigHouse = true;
+      }
       house.value = currentIntersect.userData.house;
       houseDetails.value = true;
     }
