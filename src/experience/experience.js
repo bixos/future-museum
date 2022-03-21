@@ -443,7 +443,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
     if (player && collider && houseDetails.value === false) {
       for (let i = 0; i < physicsSteps; i++) {
         updatePlayer(deltaTime / physicsSteps);
-        if (globalSocket.value && id) {
+        if (globalSocket.value && id && room.value) {
           globalSocket.value.emit("move", {
             position: [player.position.x, player.position.y, player.position.z],
             rotation: [player.rotation.x, player.rotation.y, player.rotation.z],
@@ -750,9 +750,19 @@ export default (overlayElement, joystick, loadingBarElement) => {
     THREE,
     OrbitControls
   );
-
+  const changeUser = () => {
+    globalSocket.value.emit("refreshUser");
+    scene.remove(player);
+    scene.remove(playerNameMesh);
+    playerNameMesh = null;
+    player = null;
+    id = null;
+    room.value = null;
+    gettingName.value = true;
+  };
   const loadingManager = new THREE.LoadingManager(
     () => {
+      // overlayElement.value.classList.add("ended");
       loading.value = false;
     },
     (itemUrl, itemsLoaded, itemsTotal) => {
@@ -778,7 +788,12 @@ export default (overlayElement, joystick, loadingBarElement) => {
     RunningFbx = data.RunningFbx;
     JumpFbx = data.JumpFbx;
     WalkingFbx = data.WalkingFbx;
-    gettingName.value = true;
+    if (localStorage.avatarName) {
+      gettingName.value = false;
+      start();
+    } else {
+      gettingName.value = true;
+    }
   });
   const start = () => {
     /**
@@ -842,11 +857,11 @@ export default (overlayElement, joystick, loadingBarElement) => {
         renderer.shadowMap.needsUpdate = true;
         camera.position.add(player.position);
         controls.update();
-        overlayElement.value.classList.add("ended");
 
         globalSocket.value = io("http://localhost:3000", {
           transports: ["websocket", "polling", "flashsocket"],
         });
+
         gettingName.value = false;
         gsap
           .timeline({
@@ -962,6 +977,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
         globalSocket.value.on(
           "newUserConnected",
           (clientCount, _id, _ids, _clientProps) => {
+            console.log("clientCount :>> ", clientCount);
             let alreadyHasUser = false;
             for (let i = 0; i < Object.keys(clients).length; i++) {
               if (Object.keys(clients)[i] == _id) {
@@ -1051,8 +1067,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
         globalSocket.value.on("userDisconnected", (clientCount, _id, _ids) => {
           //Update the data from the server
-          // document.getElementById("numUsers").textContent = clientCount;
-
           if (_id != id) {
             scene.remove(clients[_id].mesh);
             scene.remove(clients[_id].nameMesh);
@@ -1215,6 +1229,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
     room,
     chatOpen,
     currentIntersect,
+    changeUser,
   };
 };
 

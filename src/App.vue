@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="joystick-container" ref="joystick"></div>
+    <div v-show="!gettingName" class="joystick-container" ref="joystick"></div>
     <div
       v-if="loading"
       class="overlay"
@@ -22,26 +22,41 @@
     </div>
     <div
       ref="overlayElement"
-      class="overlay"
+      class="overlay-name"
       :class="
         deviceType() === 'desktop'
-          ? 'desktop-background-loading'
-          : 'mobile-background-loading'
+          ? 'desktop-background-loading-name'
+          : 'mobile-background-loading-name'
       "
       v-if="gettingName"
     >
+      <div class="name-image-container">
+        <img src="./assets/palmislands.png" alt="logo-home" />
+      </div>
       <div class="name-container">
         <input v-model="playerName" type="text" />
-        <button @click="start()">Jump</button>
+        <button :disabled="canGoIn" @click="start()">Jump</button>
       </div>
     </div>
-
-    <iframe
-      ref="frameContainer"
-      class="frame"
-      allow="camera *; microphone *"
+    <div
+      style="
+        background: white;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        position: absolute;
+        opacity: 1;
+        top: 0;
+        left: 0;
+      "
       v-show="gettingName"
-    ></iframe>
+    >
+      <iframe
+        ref="frameContainer"
+        class="frame"
+        allow="camera *; microphone *"
+      ></iframe>
+    </div>
 
     <div class="logo-home">
       <div class="logo-home-bg"></div>
@@ -71,11 +86,11 @@
               }}</span>
             </div>
           </div>
-          <div class="nav-box">
+          <div class="nav-box" @click="changeUser">
             <img src="./assets/icons/Setting-dark.svg" />
             Profile Settings
           </div>
-          <div class="nav-box">
+          <div class="nav-box" v-touch:tap="reset(camera, controls)">
             <img src="./assets/icons/Reset-dark.svg" />
             Restart Game
           </div>
@@ -120,13 +135,17 @@
         <span>{{ balance.toLocaleString("es-ES") }}</span>
       </div>
 
-      <div class="user-button">
+      <div class="user-button" @click="changeUser">
         <img src="./assets/icons/Setting.svg" class="logo" alt="bixos-logo" />
         <span class="player-name">{{ playerName }}</span>
       </div>
     </div>
 
-    <div v-if="deviceType() === 'desktop'" class="social-media">
+    <div
+      v-show="!gettingName"
+      v-if="deviceType() === 'desktop'"
+      class="social-media"
+    >
       <SocialMedia />
     </div>
 
@@ -162,6 +181,7 @@
       @onRun="triggerRun()"
       @onJump="triggerJump()"
       @openChat="chatOpen = true"
+      v-show="!gettingName"
     />
 
     <div
@@ -199,7 +219,7 @@
 </template>
 
 <script>
-import { ref, onMounted, defineComponent } from "vue";
+import { ref, onMounted, computed, compile } from "vue";
 
 import Drawer from "./components/Drawer.vue";
 import KeysHelper from "./components/KeysHelper.vue";
@@ -227,7 +247,9 @@ export default {
     const overlayElement = ref({});
     const joystick = ref({});
     const loadingBarElement = ref({});
-
+    const canGoIn = computed(() => {
+      return !localStorage.avatarName;
+    });
     onMounted(() => {
       if (deviceType() === "desktop") {
         chatOpen.value = true;
@@ -308,6 +330,7 @@ export default {
       room,
       chatOpen,
       currentIntersect,
+      changeUser,
     } = experience(overlayElement, joystick, loadingBarElement);
 
     return {
@@ -338,6 +361,8 @@ export default {
       room,
       chatOpen,
       currentIntersect,
+      canGoIn,
+      changeUser,
     };
   },
   data() {
@@ -439,42 +464,101 @@ canvas {
   position: absolute;
   top: 20vh;
   z-index: 9999999999999;
+  @media only screen and (max-width: 1024px) {
+    height: 70vh;
+    top: 30vh;
+  }
+}
+.overlay-name {
+  width: 100vw;
+  height: 20vh;
+  overflow: hidden;
+  position: absolute;
+  opacity: 1;
+  top: 0;
+  left: 0;
+  filter: blur(0);
+  img {
+    max-width: 90vw;
+  }
+  @media only screen and (max-width: 1024px) {
+    height: 30vh;
+  }
+}
+.name-image-container {
+  position: absolute;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  img {
+    width: 200px;
+  }
 }
 .name-container {
   height: 20vh;
   width: 100vw;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-end;
+  @media only screen and (max-width: 1024px) {
+    height: 30vh;
+  }
   input {
-    height: 30px;
-    border-radius: 6px;
+    margin-bottom: 20px;
+    height: 50px;
+    width: 300px;
     outline: none;
-    border: solid 1px #00e8da;
-    color: #1d221c;
-    font-size: 14px;
-    padding-left: 20px;
-    font-weight: 500;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
+    color: #239eda;
+    text-align: center;
+    background: #ffffff;
+    border: 1px solid #ffffff;
+    box-sizing: border-box;
+    box-shadow: -4px -4px 10px rgb(255 255 255 / 50%),
+      inset 2px 2px 6px rgb(0 47 90 / 75%);
+    border-radius: 16px;
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 37px;
+    @media only screen and (max-width: 1024px) {
+      width: 200px;
+      height: 40px;
+      font-weight: 700;
+      font-size: 24px;
+      line-height: 29px;
+      margin-bottom: 10px;
+    }
   }
   button {
-    height: 34px;
-    border-radius: 6px;
+    height: 50px;
+    width: 300px;
     outline: none;
     border: solid 1px #00e8da;
-    color: #1d221c;
-    font-size: 14px;
+    color: #2a3869;
     padding-left: 20px;
-    margin-left: 5px;
+    margin-left: 16px;
     padding-right: 20px;
     background: #00e8da;
-    font-weight: 500;
     cursor: pointer;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
-
+    margin-bottom: 20px;
+    box-shadow: 0px 6px 10px rgb(32 66 133 / 75%);
+    border-radius: 16px;
+    transform: all 0.5s;
     &:active {
-      background: #239eda;
-      color: white;
+      transform: scale(0.9, 0.9);
+    }
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 37px;
+    @media only screen and (max-width: 1024px) {
+      height: 40px;
+      width: 90px;
+      font-weight: 700;
+      font-size: 24px;
+      line-height: 29px;
+      padding: 0;
+      margin-bottom: 10px;
     }
   }
 }
@@ -574,6 +658,7 @@ canvas {
   min-width: 200px;
   max-width: 350px;
   height: 40px;
+  cursor: pointer;
   @media only screen and (max-width: 1024px) {
     display: none;
   }
@@ -593,6 +678,14 @@ canvas {
     text-overflow: ellipsis;
     white-space: nowrap;
     overflow: hidden;
+  }
+  &:hover {
+    background: #fff;
+    color: #239eda;
+    .logo {
+      filter: invert(52%) sepia(40%) saturate(945%) hue-rotate(148deg)
+        brightness(94%) contrast(100%);
+    }
   }
 }
 
@@ -683,7 +776,43 @@ canvas {
     animation: press 0.2s 1 linear;
   }
 }
+.desktop-background-loading-name {
+  background: white;
+  background-image: url("./assets/citybackground3.jpg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
 
+  z-index: 999999999;
+  .loading-text {
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+  .loading-bar-container {
+    top: auto;
+    right: 30vh;
+    bottom: 20vh;
+  }
+}
+.mobile-background-loading-name {
+  background: white;
+  background-image: url("./assets/a2mobileb2.jpg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 999999999;
+  .loading-text {
+    max-width: 100vw;
+  }
+  .loading-bar-container {
+    top: auto;
+    bottom: 10vh;
+  }
+}
 .desktop-background-loading {
   background: white;
   background-image: url("./assets/citybackground2.jpg");
@@ -734,6 +863,7 @@ canvas {
     max-width: 90vw;
   }
 }
+
 .loading-bar-container {
   border: #239eda 6px solid;
   background: #1c7eae;

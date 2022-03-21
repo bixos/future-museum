@@ -129,29 +129,30 @@ export default {
   position: absolute;
   display: flex;
   flex-direction: column;
-  bottom: 0;
-  right: 70px;
-  width: 391px;
-  height: 240px;
+  bottom: -2px;
+  right: 20px;
+  width: 300px;
 
   .controllers {
     position: relative;
     left: 0px;
     bottom: 0px;
-    background-color: #239eda;
+    background: #239eda;
+
+    border: 1px solid #ffffff;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 35px 35px 0 0;
+    border-radius: 40px 40px 0px 0px;
     margin-top: 17px;
+    padding: 15px 10px;
   }
   .key-helper {
     display: flex;
     align-items: flex-end;
-    padding: 30px 10px;
 
     .walk-hint {
-      font-size: 18px;
+      font-size: 16px;
       font-style: normal;
       font-weight: normal;
       color: #ffffff;
@@ -161,7 +162,7 @@ export default {
       margin-left: 20px;
       font-style: normal;
       font-weight: normal;
-      font-size: 18px;
+      font-size: 16px;
       color: #ffffff;
     }
   }
@@ -169,7 +170,6 @@ export default {
     display: flex;
     flex-direction: row;
     justify-content: center;
-    height: 50px;
     width: 100%;
   }
   .key {
@@ -177,16 +177,19 @@ export default {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    width: 40px;
-    height: 40px;
+    width: 35px;
+    height: 35px;
     border-radius: 6px;
     margin: 5px;
     color: #0ca6d7;
     font-weight: bold;
-    font-size: 20px;
+    font-size: 14px;
     line-height: 20px;
     background: #ffffff;
     font-weight: bold;
+    .arrow {
+      height: 9px;
+    }
   }
   .left-key {
     width: 100px;
@@ -208,7 +211,7 @@ export default {
 
   .social-media {
     position: relative;
-    padding: 21px 76px;
+    padding: 10px 0px;
     display: flex;
     background-color: #2a3869;
     justify-content: center;
