@@ -545,9 +545,9 @@ canvas {
 .actions-container {
   display: flex;
   position: absolute;
-  right: 40px;
-  top: 40px;
-  font-size: 30px;
+  right: 20px;
+  top: 20px;
+  font-size: 18px;
   font-weight: bold;
   font-style: normal;
   gap: 15px;
@@ -558,15 +558,28 @@ canvas {
 }
 
 .balance {
-  min-width: 250px;
+  min-width: 200px;
   max-width: 350px;
-  height: 60px;
+  height: 40px;
+  background: #2a3869;
+  // box-shadow: 0px 10px 30px rgb(28 56 63 / 75%);
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  padding-left: 15px;
+  color: white;
+  span {
+    margin-left: 9px;
+  }
+  .logo {
+    height: 24px;
+    width: 24px;
+  }
   @media only screen and (max-width: 1024px) {
     width: 30px;
     min-width: 155px;
     max-width: 30vw;
-    height: 50px;
-    font-size: 24px;
+    height: 40px;
     gap: 5px;
     border-radius: 16px;
     background: #fff;
@@ -574,22 +587,17 @@ canvas {
     font-weight: 900;
     display: flex;
     align-items: center;
-    box-shadow: 0px 10px 30px rgba(28, 56, 63, 0.75);
+    // box-shadow: 0px 10px 30px rgba(28, 56, 63, 0.75);
     padding: 0 5px;
     transition: all 0.3s ease;
     opacity: 1;
     .logo {
-      height: 32px;
-      width: 32px;
+      height: 25px;
+      width: 25px;
     }
   }
   @media only screen and (max-width: 320px) {
-    min-width: 125px;
-    font-size: 20px;
-    .logo {
-      height: 24px;
-      width: 24px;
-    }
+    min-width: 135px;
   }
 }
 .hide-balance {
@@ -597,23 +605,23 @@ canvas {
 }
 
 .user-button {
-  min-width: 250px;
+  min-width: 200px;
   max-width: 350px;
-  height: 60px;
+  height: 40px;
   @media only screen and (max-width: 1024px) {
     display: none;
   }
   background: #239eda;
   border-radius: 50px;
-  box-shadow: 0px 10px 30px rgba(28, 56, 63, 0.75);
+  // box-shadow: 0px 10px 30px rgba(28, 56, 63, 0.75);
   color: #fff;
   display: flex;
   align-items: center;
   gap: 15px;
   padding: 0 15px;
   .logo {
-    height: 32px;
-    width: 32px;
+    height: 25px;
+    width: 25px;
   }
   .player-name {
     text-overflow: ellipsis;
@@ -644,7 +652,7 @@ canvas {
   top: 20px;
   z-index: 99999;
   .logo-home-icon {
-    height: 120px;
+    height: 90px;
   }
   @media only screen and (max-width: 1024px) {
     .logo-home-icon {
@@ -823,8 +831,8 @@ canvas {
   position: absolute;
   top: 20px;
   right: 10px;
-  width: 50px;
-  height: 50px;
+  width: 40px;
+  height: 40px;
   cursor: pointer;
   z-index: 9999;
   display: flex;
@@ -833,8 +841,8 @@ canvas {
 }
 .hamburger {
   transition: all 0.4s ease-in-out;
-  height: 22px;
-  width: 20px;
+  height: 16px;
+  width: 18px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -844,7 +852,7 @@ canvas {
   }
 
   &__item {
-    height: 4px;
+    height: 2px;
     width: 100%;
     background: #239eda;
     transition: transform 300ms cubic-bezier(0.445, 0.05, 0.55, 0.95),
@@ -852,7 +860,7 @@ canvas {
 
     &--first {
       .hamburger--is-open & {
-        transform: translate(0, 9px) rotate(45deg);
+        transform: translate(0, 7px) rotate(45deg);
       }
     }
 
@@ -864,7 +872,7 @@ canvas {
 
     &--last {
       .hamburger--is-open & {
-        transform: translate(0, -9px) rotate(-45deg);
+        transform: translate(0, -7px) rotate(-45deg);
       }
     }
   }

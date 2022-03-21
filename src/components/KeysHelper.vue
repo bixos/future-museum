@@ -30,7 +30,7 @@
       </div>
       <div class="texting-container">
         <div class="chat-channel">
-          <span>Room {{ room }}</span>
+          <span>Channel {{ room + 1 || 1 }}</span>
         </div>
         <div class="chat-input">
           <input
@@ -254,7 +254,7 @@ export default {
     padding-bottom: 20px;
     padding-top: 20px;
     .chat-channel {
-      width: 80px;
+      width: 100px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -268,6 +268,9 @@ export default {
     .chat-input {
       display: flex;
       width: 75%;
+      @media only screen and (max-width: 1024px) {
+        width: 65%;
+      }
       justify-content: center;
       input {
         background: #239eda;
