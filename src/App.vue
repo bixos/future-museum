@@ -77,42 +77,7 @@
     </div>
 
     <div v-if="deviceType() === 'desktop'" class="social-media">
-      <a href="https://t.me/ubxscommunity" target="_blank">
-        <img
-          src="./assets/icons/Telegram.svg"
-          class="social-media-icon"
-          alt="telegram"
-        />
-      </a>
-      <a href="https://discord.io/ubxs" target="_blank">
-        <img
-          src="./assets/icons/Discord.svg"
-          class="social-media-icon"
-          alt="discord"
-        />
-      </a>
-      <a href="https://twitter.com/Bixosinc" target="_blank">
-        <img
-          src="./assets/icons/Twitter.svg"
-          class="social-media-icon"
-          alt="twitter"
-        />
-      </a>
-      <a href="https://www.linkedin.com/company/bixosinc/" target="_blank">
-        <img
-          src="./assets/icons/LinkedIn.svg"
-          class="social-media-icon"
-          alt="linkedin"
-        />
-      </a>
-
-      <a href="https://www.instagram.com/bixosinc" target="_blank">
-        <img
-          src="./assets/icons/Instagram.svg"
-          class="social-media-icon"
-          alt="instagram"
-        />
-      </a>
+      <SocialMedia />
     </div>
 
     <HouseModel
@@ -182,6 +147,7 @@ import Drawer from "./components/Drawer.vue";
 import KeysHelper from "./components/KeysHelper.vue";
 import MobileActions from "./components/MobileActions.vue";
 import HouseModel from "./components/HouseModel.vue";
+import SocialMedia from "./components/SocialMedia.vue";
 
 import Telegram from "./assets/icons/Telegram.svg";
 import BixosLight from "./assets/icons/Bixos-light.svg";
@@ -194,7 +160,7 @@ import experience from "./experience/experience";
 
 export default defineComponent({
   name: "App",
-  components: { Drawer, KeysHelper, MobileActions, HouseModel },
+  components: { Drawer, KeysHelper, MobileActions, HouseModel, SocialMedia },
 
   setup() {
     const overlayElement = ref({});
@@ -384,22 +350,6 @@ canvas {
   }
 }
 
-.social-media {
-  position: absolute;
-  bottom: 40px;
-  right: 40px;
-  display: flex;
-  .social-media-icon {
-    height: 32px;
-    width: 32px;
-    margin: 0 10px;
-    cursor: pointer;
-    &:hover {
-      filter: invert(52%) sepia(40%) saturate(945%) hue-rotate(148deg)
-        brightness(94%) contrast(100%);
-    }
-  }
-}
 .logo-home {
   position: absolute;
   top: 40px;
