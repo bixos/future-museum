@@ -1,19 +1,37 @@
 <template>
   <div>
     <div class="chat">
-      <div class="chat-container">
+      <div
+        v-if="deviceType() !== 'desktop'"
+        v-touch:tap="closeChat"
+        class="close-chat"
+      >
+        <span>Close</span>
+        <img src="../assets/icons/Arrow.svg" alt="" />
+      </div>
+      <div ref="chatContainer" class="chat-container">
         <p
           v-for="message in messages"
           :key="`${message.name}-${Math.random()}`"
           class="message-container"
         >
-          <span class="chat-time">[15:31]</span>
-          <span class="chat-name"> {{ message.name }}: </span>
+          <span
+            class="chat-time"
+            :style="playerName === message.name ? '' : 'color:#2A3869'"
+            >[15:31]
+          </span>
+          <span
+            class="chat-name"
+            :style="playerName === message.name ? '' : 'color:#2A3869'"
+            >{{ message.name }}:
+          </span>
           <span class="chat-message">{{ message.msg }}</span>
         </p>
       </div>
       <div class="texting-container">
-        <div class="chat-channel"><span>Local</span></div>
+        <div class="chat-channel">
+          <span>Room {{ room }}</span>
+        </div>
         <div class="chat-input">
           <input
             v-on:keyup.enter="sendMessage()"
@@ -23,8 +41,6 @@
             @blur="handleTypingState()"
             maxlength="100"
           />
-
-          <div>&#128515;</div>
         </div>
       </div>
     </div>
@@ -92,61 +108,135 @@
 
 <script>
 import { ref, onMounted } from "vue";
+import { deviceType } from "../experience/helper";
+
 export default {
-  props: ["socket"],
+  props: ["socket", "room"],
   setup(props, { emit }) {
     const messages = ref([]);
     const inputMessage = ref("");
+    const chatContainer = ref("");
+    const playerName = ref("Guest");
+    playerName.value = localStorage.playerName;
     onMounted(() => {
       console.log("props.socket :>> ", props.socket);
       if (props.socket) {
         props.socket.on("chat message", (message) => {
           messages.value.push(message);
-          // window.scrollTo(0, document.body.scrollHeight);
+          chatContainer.value.scrollTo(0, chatContainer.value.scrollHeight);
         });
       }
     });
 
     const sendMessage = () => {
-      props.socket.emit("chat message", inputMessage.value);
+      console.log("props.room :>> ", props.room);
+      props.socket.emit("chat message", {
+        msg: inputMessage.value,
+        room: props.room,
+      });
       inputMessage.value = "";
     };
     const handleTypingState = () => {
       emit("handleTypingState");
     };
-    return { messages, inputMessage, sendMessage, handleTypingState };
+    const closeChat = () => {
+      emit("closeChat");
+    };
+    return {
+      messages,
+      inputMessage,
+      sendMessage,
+      handleTypingState,
+      chatContainer,
+      playerName,
+      closeChat,
+      deviceType,
+    };
   },
 };
 </script>
+<style lang="scss">
+.nipple {
+  opacity: 1 !important;
+}
 
+.nipple > div.back {
+  opacity: 1 !important;
+  background: rgb(255, 255, 255, 0.25) !important;
+  border: 1px solid white !important;
+}
+
+.nipple > div.front {
+  background: url("../assets/icons/Controller.svg") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
+  opacity: 1 !important;
+}
+</style>
 <style lang="scss" scoped>
 .chat {
   position: absolute;
   bottom: 20px;
   left: 20px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.2);
-  // color: #1d221c;
+  background: rgba(255, 255, 255, 0.25);
   color: white;
-  max-width: 100vw;
+  max-width: calc(100vw - 20px);
   width: 500px;
   font-size: 14px;
+  backdrop-filter: blur(40px);
   font-weight: 600;
+  border: 1px solid #ffffff;
+  border-radius: 40px;
+  padding-top: 20px;
+  @media only screen and (max-width: 1024px) {
+    left: 10px;
+    right: 10px;
+    bottom: 30vh;
+  }
+  .close-chat {
+    position: absolute;
+    right: 50px;
+    top: 5px;
+    span {
+      margin-right: 5px;
+    }
+    img {
+      filter: brightness(0) invert(1);
+    }
+  }
   .chat-container {
-    display: flex;
-    flex-direction: column-reverse;
-    padding: 20px 20px;
+    margin: 0px 20px;
     height: 150px;
     overflow-y: scroll;
+    @media only screen and (max-width: 1024px) {
+      height: 200px;
+    }
+    /* width */
     &::-webkit-scrollbar {
-      display: none;
+      width: 11px;
+    }
+
+    /* Track */
+    &::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Handle */
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.75);
+    }
+
+    /* Handle on hover */
+    &::-webkit-scrollbar-thumb:hover {
+      // background: #555;
     }
     .message-container {
       margin: 0;
       line-height: 1.5;
       margin-bottom: 5px;
       .chat-time {
-        color: #60caca;
+        color: #239eda;
       }
       .chat-name {
         color: #239eda;
@@ -160,37 +250,36 @@ export default {
   .texting-container {
     height: 40px;
     display: flex;
-    border-bottom-left-radius: 6px;
-    border-bottom-right-radius: 6px;
-    border-top: 1px solid white;
+    justify-content: center;
+    padding-bottom: 20px;
+    padding-top: 20px;
     .chat-channel {
-      width: 60px;
+      width: 80px;
       display: flex;
       justify-content: center;
       align-items: center;
       color: white;
-      background: #239eda;
-      border-bottom-left-radius: 6px;
+      background: #2a3869;
+      font-size: 16px;
+      border: 1px solid #239eda;
+      box-shadow: inset 0px 4px 4px rgb(0 0 0 / 25%);
+      border-radius: 40px 0px 0px 40px;
     }
     .chat-input {
       display: flex;
-      width: 100%;
+      width: 75%;
+      justify-content: center;
       input {
+        background: #239eda;
+        border: 1px solid #239eda;
+        box-shadow: inset 0px 4px 4px rgb(0 0 0 / 25%);
+        border-radius: 0px 40px 40px 0px;
         width: 100%;
-        background: transparent;
-        border: 0;
-        width: calc(100% - 40px);
         outline: none;
-        // color: #1d221c;
         color: white;
         font-size: 14px;
         padding-left: 10px;
         font-weight: 600;
-      }
-      div {
-        position: absolute;
-        right: 10px;
-        bottom: 11.5px;
       }
     }
   }

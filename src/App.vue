@@ -154,16 +154,20 @@
     ></lottie-player>
 
     <KeysHelper
-      v-if="deviceType() === 'desktop' && globalSocket"
+      v-if="globalSocket && chatOpen"
       :socket="globalSocket"
+      :room="room"
       @handleTypingState="handleTypingState()"
+      @closeChat="chatOpen = false"
     />
     <MobileActions
       :interactHint="interactHint"
+      :currentIntersect="currentIntersect"
       @onReset="reset(camera, controls)"
       @onInteract="interact()"
       @onRun="triggerRun()"
       @onJump="triggerJump()"
+      @openChat="chatOpen = true"
     />
 
     <div
@@ -228,7 +232,11 @@ export default {
     const overlayElement = ref({});
     const joystick = ref({});
     const loadingBarElement = ref({});
+
     onMounted(() => {
+      if (deviceType() === "desktop") {
+        chatOpen.value = true;
+      }
       // https://bixosio.readyplayer.me/
       frameContainer.value.src = `https://${subdomain}.readyplayer.me/avatar?frameApi=true`;
       window.addEventListener("message", subscribe);
@@ -302,6 +310,9 @@ export default {
       playerName,
       globalSocket,
       handleTypingState,
+      room,
+      chatOpen,
+      currentIntersect,
     } = experience(overlayElement, joystick, loadingBarElement);
 
     return {
@@ -329,6 +340,9 @@ export default {
       frameContainer,
       globalSocket,
       handleTypingState,
+      room,
+      chatOpen,
+      currentIntersect,
     };
   },
   data() {
