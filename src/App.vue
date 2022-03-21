@@ -866,9 +866,6 @@ canvas {
   align-items: center;
   flex-direction: column;
   justify-content: space-between;
-  @media only screen and (max-width: 320px) {
-    // height: 80vh;
-  }
   .nav-box-container {
     margin-top: 80px;
   }
