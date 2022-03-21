@@ -43,21 +43,15 @@
       v-show="gettingName"
     ></iframe>
 
-    <div v-if="deviceType() === 'desktop'" class="logo-home">
+    <div class="logo-home">
+      <div class="logo-home-bg"></div>
       <a href="https://bixos.io/" target="_blank" rel="noopener noreferrer">
         <img
-          src="./assets/icons/Bixos-light-text.svg"
+          src="./assets/palmislands.png"
           class="logo-home-icon"
           alt="logo-home"
         />
       </a>
-    </div>
-    <div v-else class="logo-home">
-      <img
-        src="./assets/icons/Bixos-light.svg"
-        class="logo-home-icon"
-        alt="logo-home"
-      />
     </div>
 
     <Drawer
@@ -66,17 +60,34 @@
       :exist="true"
       ref="LeftDrawer"
     >
-      <div class="logo-home">
-        <img
-          src="./assets/icons/Bixos-light-text.svg"
-          class="logo-home-icon drawer-logo"
-          alt="logo-home"
-        />
-      </div>
       <div class="nav">
-        <div v-for="link in links" :key="link.path" class="linksContainer">
-          <img :src="link.icon" class="link-icon" alt="link-icon" />
-          <a :href="link.link" target="_blank">{{ link.title }}</a>
+        <div class="nav-box-container">
+          <div class="nav-box" style="margin-bottom: 20px">
+            <img src="./assets/icons/Bixos-light.svg" width="80" />
+            <div class="nav-box-user">
+              <span> {{ playerName }}</span>
+              <span class="nav-box-user-price">{{
+                balance.toLocaleString("es-ES")
+              }}</span>
+            </div>
+          </div>
+          <div class="nav-box">
+            <img src="./assets/icons/Setting-dark.svg" />
+            Profile Settings
+          </div>
+          <div class="nav-box">
+            <img src="./assets/icons/Reset-dark.svg" />
+            Restart Game
+          </div>
+        </div>
+        <div class="link-container">
+          <img
+            v-for="link in links"
+            :key="link.path"
+            :src="link.icon"
+            class="link-icon"
+            alt="link-icon"
+          />
         </div>
       </div>
     </Drawer>
@@ -92,9 +103,27 @@
       </div>
     </div>
 
-    <div class="balance">
-      <img src="./assets/icons/Bixos.svg" class="logo" alt="bixos-logo" />
-      <span>{{ balance.toLocaleString("es-ES") }}</span>
+    <div class="actions-container">
+      <div class="balance" :class="{ 'hide-balance': drawerIsActive }">
+        <img
+          v-if="deviceType() === 'desktop'"
+          src="./assets/icons/Bixos-light.svg"
+          class="logo"
+          alt="bixos-logo"
+        />
+        <img
+          v-else
+          src="./assets/icons/Bixos.svg"
+          class="logo"
+          alt="bixos-logo"
+        />
+        <span>{{ balance.toLocaleString("es-ES") }}</span>
+      </div>
+
+      <div class="user-button">
+        <img src="./assets/icons/Setting.svg" class="logo" alt="bixos-logo" />
+        <span class="player-name">{{ playerName }}</span>
+      </div>
     </div>
 
     <div v-if="deviceType() === 'desktop'" class="social-media">
@@ -366,14 +395,17 @@ export default {
           link: "https://www.instagram.com/bixosinc",
         },
       ],
+      drawerIsActive: false,
     };
   },
   methods: {
     openMenu() {
       if (this.$refs.LeftDrawer.active) {
         this.$refs.LeftDrawer.close();
+        this.drawerIsActive = false;
       } else {
         this.$refs.LeftDrawer.open();
+        this.drawerIsActive = true;
       }
     },
   },
@@ -496,38 +528,83 @@ canvas {
   top: 10%;
 }
 
-.balance {
-  width: 280px;
-  height: 60px;
-
+.actions-container {
+  display: flex;
   position: absolute;
   right: 40px;
   top: 40px;
-  @media only screen and (max-width: 1024px) {
-    width: 200px;
-    max-width: 40vw;
-    height: 60px;
-    right: 100px;
-    top: 20px;
-    font-size: 24px;
-
-    margin-left: auto;
-    margin-right: auto;
-  }
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.25);
-  color: #239eda;
   font-size: 30px;
   font-weight: bold;
   font-style: normal;
+  gap: 15px;
+  @media only screen and (max-width: 1024px) {
+    top: 20px;
+    right: 70px;
+  }
+}
+
+.balance {
+  min-width: 250px;
+  max-width: 350px;
+  height: 60px;
+  @media only screen and (max-width: 1024px) {
+    width: 30px;
+    min-width: 155px;
+    max-width: 30vw;
+    height: 50px;
+    font-size: 24px;
+    gap: 5px;
+    border-radius: 16px;
+    background: #fff;
+    color: #239eda;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    box-shadow: 0px 10px 30px rgba(28, 56, 63, 0.75);
+    padding: 0 5px;
+    transition: all 0.3s ease;
+    opacity: 1;
+    .logo {
+      height: 32px;
+      width: 32px;
+    }
+  }
+  @media only screen and (max-width: 320px) {
+    min-width: 125px;
+    font-size: 20px;
+    .logo {
+      height: 24px;
+      width: 24px;
+    }
+  }
+}
+.hide-balance {
+  opacity: 0;
+}
+
+.user-button {
+  min-width: 250px;
+  max-width: 350px;
+  height: 60px;
+  @media only screen and (max-width: 1024px) {
+    display: none;
+  }
+  background: #239eda;
+  border-radius: 50px;
+  box-shadow: 0px 10px 30px rgba(28, 56, 63, 0.75);
+  color: #fff;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 14px;
+  gap: 15px;
+  padding: 0 15px;
   .logo {
     height: 32px;
     width: 32px;
+  }
+  .player-name {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
   }
 }
 
@@ -549,20 +626,25 @@ canvas {
 }
 .logo-home {
   position: absolute;
-  top: 40px;
-  left: 40px;
-  @media only screen and (max-width: 1024px) {
-    left: 20px;
-    top: 20px;
-  }
+  left: 20px;
+  top: 20px;
+  z-index: 99999;
   .logo-home-icon {
-    height: 60px;
+    height: 120px;
+  }
+  @media only screen and (max-width: 1024px) {
+    .logo-home-icon {
+      height: 55px;
+    }
+  }
+  @media only screen and (max-width: 320px) {
+    left: 5px;
   }
   cursor: pointer;
-  &:hover {
-    filter: invert(52%) sepia(40%) saturate(945%) hue-rotate(148deg)
-      brightness(94%) contrast(100%);
-  }
+  //   &:hover {
+  //     filter: invert(52%) sepia(40%) saturate(945%) hue-rotate(148deg)
+  //       brightness(94%) contrast(100%);
+  //   }
 }
 .drawer-logo {
   filter: invert(52%) sepia(40%) saturate(945%) hue-rotate(148deg)
@@ -726,9 +808,9 @@ canvas {
   border-radius: 16px;
   position: absolute;
   top: 20px;
-  right: 20px;
-  width: 60px;
-  height: 60px;
+  right: 10px;
+  width: 50px;
+  height: 50px;
   cursor: pointer;
   z-index: 9999;
   display: flex;
@@ -737,9 +819,8 @@ canvas {
 }
 .hamburger {
   transition: all 0.4s ease-in-out;
-
-  height: 28px;
-  width: 33px;
+  height: 22px;
+  width: 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -757,7 +838,7 @@ canvas {
 
     &--first {
       .hamburger--is-open & {
-        transform: translate(0, 12px) rotate(45deg);
+        transform: translate(0, 9px) rotate(45deg);
       }
     }
 
@@ -769,7 +850,7 @@ canvas {
 
     &--last {
       .hamburger--is-open & {
-        transform: translate(0, -12px) rotate(-45deg);
+        transform: translate(0, -9px) rotate(-45deg);
       }
     }
   }
@@ -780,14 +861,54 @@ canvas {
 }
 
 .nav {
-  padding-top: 120px;
-  padding-left: 40px;
-  .linksContainer {
-    margin-bottom: 15px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: space-between;
+  @media only screen and (max-width: 320px) {
+    // height: 80vh;
+  }
+  .nav-box-container {
+    margin-top: 80px;
+  }
+  .nav-box {
+    background: #239eda;
+    border-radius: 20px;
+    width: calc(80vw - 30px);
+    min-height: 17px;
     display: flex;
     align-items: center;
+    gap: 20px;
+    margin: 10px auto;
+    padding: 20px 30px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #2a3869;
+    .nav-box-user {
+      display: flex;
+      flex-direction: column;
+      .nav-box-user-price {
+        font-size: 33px;
+        color: white;
+      }
+    }
+  }
+  .link-container {
+    width: calc(80vw - 30px);
+    padding: 10px 30px;
+    height: 50px;
+    bottom: 50px;
+    background: #ffffff;
+    border-radius: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: space-evenly;
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 45px;
     .link {
-      font-size: 24px;
+      font-size: 22px;
       margin-left: 10px;
     }
     .link-icon {
