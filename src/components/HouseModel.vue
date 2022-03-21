@@ -9,16 +9,31 @@
     />
 
     <div class="house-details-container">
-      <div class="house-header">
-        <img src="../assets/house.png" class="house-img" alt="house" />
+      <div
+        class="house-header"
+        v-touch:swipe.left="previous"
+        v-touch:swipe.right="next"
+      >
+        <img
+          v-for="(item, index) in carouselItems"
+          :key="index"
+          v-show="index === activeItem"
+          :src="item.path"
+          :class="['house-img', { 'active-item': index === activeItem }]"
+          :alt="item.alt"
+        />
         <div style="display: flex">
           <img
             src="../assets/icons/Bixos-light.svg"
             style="height: 32px; margin-right: 10px"
-            alt="ixos-light"
+            alt="bixos-light"
           />
 
           <span>{{ house.price.toLocaleString("es-ES") }}</span>
+        </div>
+        <div class="house-carousel">
+          <button class="arrow arrow-right" @click="next"></button>
+          <button class="arrow arrow-left" @click="previous"></button>
         </div>
       </div>
       <div class="tabs">
@@ -213,8 +228,48 @@ export default {
     const onSellHouse = () => {
       emit("onSellHouse");
     };
+    const carouselItems = ref([
+      {
+        path: require("../assets/house/house.png"),
+        alt: "house",
+      },
+      {
+        path: require("../assets/house/bedroom.png"),
+        alt: "bedroom",
+      },
+      {
+        path: require("../assets/house/kitchen.png"),
+        alt: "kitchen",
+      },
+      {
+        path: require("../assets/house/saloon.png"),
+        alt: "saloon",
+      },
+    ]);
+    const activeCarouselItem = ref(carouselItems.value[0]);
+    const activeItem = ref(0);
+    const next = () => {
+      if (activeItem.value <= carouselItems.value.length - 2)
+        activeItem.value += 1;
+      else activeItem.value = 0;
+      activeCarouselItem.value = carouselItems.value[activeItem.value];
+    };
+    const previous = () => {
+      if (activeItem.value !== 0) activeItem.value -= 1;
+      else activeItem.value = carouselItems.value.length - 1;
+      activeCarouselItem.value = carouselItems.value[activeItem.value];
+    };
 
-    return { activeTab, onHideModel, onBuyHouse, onSellHouse };
+    return {
+      activeTab,
+      onHideModel,
+      onBuyHouse,
+      onSellHouse,
+      activeItem,
+      carouselItems,
+      next,
+      previous,
+    };
   },
 };
 </script>
@@ -269,6 +324,11 @@ export default {
       .house-img {
         position: absolute;
         top: -60px;
+        -webkit-animation: fadeIn 0.5s ease-in-out; /* Safari, Chrome and Opera > 12.1 */
+        -moz-animation: fadeIn 0.5s ease-in-out; /* Firefox < 16 */
+        -ms-animation: fadeIn 0.5s ease-in-out; /* Internet Explorer */
+        -o-animation: fadeIn 0.5s ease-in-out; /* Opera < 12.1 */
+        animation: fadeIn 0.5s ease-in-out;
       }
       span {
         font-weight: 900;
@@ -276,6 +336,30 @@ export default {
         line-height: 35px;
         color: #ffffff;
         margin-bottom: 10px;
+      }
+      .arrow {
+        border: solid white;
+        border-width: 0px 6px 6px 0;
+        display: inline-block;
+        padding: 3px;
+        position: absolute;
+        top: 55px;
+        width: 25px;
+        height: 25px;
+        background: transparent;
+      }
+      .arrow:hover {
+        cursor: pointer;
+      }
+      .arrow-right {
+        right: 25px;
+        transform: rotate(-45deg);
+        -webkit-transform: rotate(-45deg);
+      }
+      .arrow-left {
+        left: 25px;
+        transform: rotate(135deg);
+        -webkit-transform: rotate(135deg);
       }
     }
     .house-body {
@@ -432,6 +516,43 @@ export default {
   border-bottom: #68c2c4 4px solid;
   .tab-text {
     color: #68c2c4;
+  }
+}
+
+// fade animation
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* Firefox < 16 */
+@-moz-keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* Safari, Chrome and Opera > 12.1 */
+@-webkit-keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* Internet Explorer */
+@-ms-keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 </style>
