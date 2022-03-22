@@ -167,7 +167,8 @@
     ></lottie-player>
 
     <KeysHelper
-      v-if="globalSocket && chatOpen"
+      v-if="globalSocket"
+      v-show="chatOpen"
       :socket="globalSocket"
       :room="room"
       @handleTypingState="handleTypingState()"
@@ -247,9 +248,12 @@ export default {
     const overlayElement = ref({});
     const joystick = ref({});
     const loadingBarElement = ref({});
+    const avatarURL = ref(null);
+    avatarURL.value = localStorage.avatarName;
     const canGoIn = computed(() => {
-      return !localStorage.avatarName;
+      return !avatarURL.value;
     });
+
     onMounted(() => {
       if (deviceType() === "desktop") {
         chatOpen.value = true;
@@ -280,7 +284,8 @@ export default {
         // Get avatar GLB URL
         if (json.eventName === "v1.avatar.exported") {
           localStorage.avatarName = json.data.url;
-          start();
+          avatarURL.value = json.data.url;
+          // start();
         }
 
         // Get user id

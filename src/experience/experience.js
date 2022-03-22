@@ -80,7 +80,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
   let gravity = -30;
 
   const playerSpeed = 10;
-  const physicsSteps = 20;
+  const physicsSteps = 4;
 
   let upVector = new THREE.Vector3(0, 1, 0);
   let tempVector = new THREE.Vector3();
@@ -275,7 +275,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
           new THREE.Vector3(0, 1, 0),
           angleYCameraDirection + directionOffset()
         );
-        player.quaternion.rotateTowards(rotateQuarternion, 0.005);
+        player.quaternion.rotateTowards(rotateQuarternion, 0.05);
         const dirrr = new THREE.Euler().setFromQuaternion(
           player.quaternion,
           "YXZ"
@@ -303,7 +303,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
           new THREE.Vector3(0, 1, 0),
           angleYCameraDirection + (radian - Math.PI / 2)
         );
-        player.quaternion.rotateTowards(rotateQuarternion, 0.005);
+        player.quaternion.rotateTowards(rotateQuarternion, 0.05);
         const dirrr = new THREE.Euler().setFromQuaternion(
           player.quaternion,
           "YXZ"
@@ -420,7 +420,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
   const raycaster = new THREE.Raycaster();
   let DOWN_DIRECTION = new THREE.Vector3(0, -1, 0);
   let oldElapsedTime = 0;
-
+  let pingPlayerMove = 0;
   const render = () => {
     // stats.update();
     const elapsedTime = clock.getElapsedTime();
@@ -442,15 +442,11 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
     if (player && collider && houseDetails.value === false) {
       for (let i = 0; i < physicsSteps; i++) {
-        updatePlayer(deltaTime / physicsSteps);
-        if (globalSocket.value && id && room.value) {
-          globalSocket.value.emit("move", {
-            position: [player.position.x, player.position.y, player.position.z],
-            rotation: [player.rotation.x, player.rotation.y, player.rotation.z],
-            state: currentAction._clip.name,
-            room: room.value,
-          });
+        if (player.position.y < -18) {
+          player.position.y = -16;
         }
+        updatePlayer(deltaTime / physicsSteps);
+
         if (playerNameMesh && playerNameMesh.position) {
           playerNameMesh.position.set(
             player.position.x,
@@ -459,7 +455,20 @@ export default (overlayElement, joystick, loadingBarElement) => {
           );
           playerNameMesh.rotation.y = controls.getAzimuthalAngle();
         }
+        if (globalSocket.value && id && (room.value || room.value === 0)) {
+          globalSocket.value.emit("move", {
+            position: [player.position.x, player.position.y, player.position.z],
+            rotation: [player.rotation.x, player.rotation.y, player.rotation.z],
+            state: currentAction._clip.name,
+            room: room.value,
+          });
+          pingPlayerMove = 0;
+        }
       }
+    }
+    if (pingPlayerMove === 5) {
+    } else {
+      pingPlayerMove++;
     }
 
     if (playerMixer) {
@@ -731,27 +740,45 @@ export default (overlayElement, joystick, loadingBarElement) => {
       celebrate.value = false;
     }, 3000);
   };
-
-  const requestFullScreen = () => {
+  window.addEventListener("touchstart", () => {
     var element = document.documentElement; // Make the body go full screen.
     var requestMethod =
       element.requestFullScreen ||
       element.webkitRequestFullScreen ||
       element.mozRequestFullScreen ||
       element.msRequestFullScreen;
-
     if (requestMethod) {
       // Native full screen.
       requestMethod.call(element);
     }
-  };
+  });
+  window.addEventListener("touchmove", () => {
+    var element = document.documentElement; // Make the body go full screen.
+    var requestMethod =
+      element.requestFullScreen ||
+      element.webkitRequestFullScreen ||
+      element.mozRequestFullScreen ||
+      element.msRequestFullScreen;
+    if (requestMethod) {
+      // Native full screen.
+      requestMethod.call(element);
+    }
+  });
 
   const { renderer, camera, scene, controls, clock } = init(
     THREE,
     OrbitControls
   );
   const changeUser = () => {
-    globalSocket.value.emit("refreshUser");
+    // globalSocket.value.emit("refreshUser");
+    for (const key in clients) {
+      scene.remove(clients[key].mesh);
+      scene.remove(clients[key].nameMesh);
+
+      delete clients[key];
+    }
+
+    globalSocket.value.disconnect();
     scene.remove(player);
     scene.remove(playerNameMesh);
     playerNameMesh = null;
@@ -760,6 +787,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
     room.value = null;
     gettingName.value = true;
   };
+
   const loadingManager = new THREE.LoadingManager(
     () => {
       // overlayElement.value.classList.add("ended");
@@ -775,6 +803,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
       console.log("error");
     }
   );
+
   loadResources(loadingManager, THREE, MeshBVH, (data) => {
     Map = data.Map;
     collider = data.collider;
@@ -810,7 +839,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
         ),
       };
 
-      player.position.set(0, -100, 120);
+      player.position.set(0, 100, 120);
 
       player.children[0].translateY(-1.5);
       player.children[0].rotateY(Math.PI / 2);
@@ -858,9 +887,13 @@ export default (overlayElement, joystick, loadingBarElement) => {
         camera.position.add(player.position);
         controls.update();
 
-        globalSocket.value = io("http://localhost:3000", {
-          transports: ["websocket", "polling", "flashsocket"],
-        });
+        "http://localhost:3000",
+          (globalSocket.value = io(
+            "https://pacific-island-87082.herokuapp.com/",
+            {
+              transports: ["websocket", "polling", "flashsocket"],
+            }
+          ));
 
         gettingName.value = false;
         gsap
@@ -875,7 +908,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
             currentAction = stand;
           });
 
-        // https://pacific-island-87082.herokuapp.com/
+        //
         globalSocket.value.emit("send-name", {
           playerName: playerName.value,
           avatarName: localStorage.avatarName,
@@ -885,89 +918,105 @@ export default (overlayElement, joystick, loadingBarElement) => {
         globalSocket.value.on(
           "introduction",
           (_id, _clientNum, _ids, _clientProps, _room) => {
-            if (!id) {
-              for (let i = 0; i < _ids.length; i++) {
-                if (_ids[i] != _id) {
-                  gltfLoader.load(
-                    _clientProps[_ids[i]].avatar,
-                    (newPlayerGltf) => {
-                      const newPlayer = newPlayerGltf.scene;
-                      newPlayer.playerInfo = {
-                        radius: 0.5,
-                        segment: new THREE.Line3(
-                          new THREE.Vector3(),
-                          new THREE.Vector3(0, -1.0, 0.0)
-                        ),
-                      };
-
-                      newPlayer.position.set(0, -17, 120);
-
-                      newPlayer.children[0].translateY(-1.5);
-                      newPlayer.children[0].rotateY(Math.PI / 2);
-
-                      newPlayer.children[0].rotateZ(-Math.PI);
-                      newPlayer.children[0].castShadow = false;
-                      newPlayer.children[0].receiveShadow = false;
-                      const newPlayertextGeometry = new TextGeometry(
-                        _clientProps[_ids[i]].name,
-                        {
-                          font: font,
-                          size: 0.2,
-                          height: 0.01,
-                          curveSegments: 2,
-                          bevelEnabled: true,
-                          bevelThickness: 0.003,
-                          bevelSize: 0.002,
-                          bevelOffset: 0,
-                          bevelSegments: 1,
-                        }
-                      );
-                      newPlayertextGeometry.center();
-
-                      const newPlayerText = new THREE.Mesh(
-                        newPlayertextGeometry,
-                        material
-                      );
-                      newPlayerText.translateY(0.6);
-
-                      clients[_ids[i]] = {
-                        mesh: newPlayer,
-                        nameMesh: newPlayerText,
-                      };
-
-                      clients[_ids[i]].mixer = new THREE.AnimationMixer(
-                        clients[_ids[i]].mesh
-                      );
-                      clients[_ids[i]].falling = clients[
-                        _ids[i]
-                      ].mixer.clipAction(
-                        fallingFbx.animations[0],
-                        clients[_ids[i]].mesh
-                      );
-                      clients[_ids[i]].stand = playerMixer.clipAction(
-                        BreathingIdleFbx.animations[0],
-                        clients[_ids[i]].mesh
-                      );
-                      clients[_ids[i]].jumpForward = playerMixer.clipAction(
-                        JumpFbx.animations[0],
-                        clients[_ids[i]].mesh
-                      );
-                      clients[_ids[i]].runing = playerMixer.clipAction(
-                        RunningFbx.animations[0],
-                        clients[_ids[i]].mesh
-                      );
-                      clients[_ids[i]].wallk = playerMixer.clipAction(
-                        WalkingFbx.animations[0],
-                        clients[_ids[i]].mesh
-                      );
-
-                      //Add initial users to the scene
-                      scene.add(clients[_ids[i]].mesh);
-                      scene.add(clients[_ids[i]].nameMesh);
-                    }
-                  );
+            for (let i = 0; i < _ids.length; i++) {
+              let alreadyHasUser = false;
+              for (
+                let index = 0;
+                index < Object.keys(clients).length;
+                index++
+              ) {
+                if (Object.keys(clients)[index] == _ids[i]) {
+                  alreadyHasUser = true;
+                  break;
                 }
               }
+              if (
+                _ids[i] != _id &&
+                _clientProps[_ids[i]].avatar &&
+                !alreadyHasUser
+              ) {
+                gltfLoader.load(
+                  _clientProps[_ids[i]].avatar,
+                  (newPlayerGltf) => {
+                    const newPlayer = newPlayerGltf.scene;
+                    newPlayer.playerInfo = {
+                      radius: 0.5,
+                      segment: new THREE.Line3(
+                        new THREE.Vector3(),
+                        new THREE.Vector3(0, -1.0, 0.0)
+                      ),
+                    };
+
+                    newPlayer.position.set(0, 100, 120);
+
+                    newPlayer.children[0].translateY(-1.5);
+                    newPlayer.children[0].rotateY(Math.PI / 2);
+
+                    newPlayer.children[0].rotateZ(-Math.PI);
+                    newPlayer.children[0].castShadow = false;
+                    newPlayer.children[0].receiveShadow = false;
+
+                    const newPlayertextGeometry = new TextGeometry(
+                      _clientProps[_ids[i]].name,
+                      {
+                        font: font,
+                        size: 0.2,
+                        height: 0.01,
+                        curveSegments: 2,
+                        bevelEnabled: true,
+                        bevelThickness: 0.003,
+                        bevelSize: 0.002,
+                        bevelOffset: 0,
+                        bevelSegments: 1,
+                      }
+                    );
+                    newPlayertextGeometry.center();
+
+                    const newPlayerText = new THREE.Mesh(
+                      newPlayertextGeometry,
+                      material
+                    );
+                    newPlayerText.translateY(0.6);
+
+                    clients[_ids[i]] = {
+                      mesh: newPlayer,
+                      nameMesh: newPlayerText,
+                    };
+
+                    clients[_ids[i]].mixer = new THREE.AnimationMixer(
+                      clients[_ids[i]].mesh
+                    );
+                    clients[_ids[i]].falling = clients[
+                      _ids[i]
+                    ].mixer.clipAction(
+                      fallingFbx.animations[0],
+                      clients[_ids[i]].mesh
+                    );
+                    clients[_ids[i]].stand = playerMixer.clipAction(
+                      BreathingIdleFbx.animations[0],
+                      clients[_ids[i]].mesh
+                    );
+                    clients[_ids[i]].jumpForward = playerMixer.clipAction(
+                      JumpFbx.animations[0],
+                      clients[_ids[i]].mesh
+                    );
+                    clients[_ids[i]].runing = playerMixer.clipAction(
+                      RunningFbx.animations[0],
+                      clients[_ids[i]].mesh
+                    );
+                    clients[_ids[i]].wallk = playerMixer.clipAction(
+                      WalkingFbx.animations[0],
+                      clients[_ids[i]].mesh
+                    );
+
+                    //Add initial users to the scene
+                    scene.add(clients[_ids[i]].mesh);
+                    scene.add(clients[_ids[i]].nameMesh);
+                  }
+                );
+              }
+            }
+            if (!id) {
               id = _id;
               room.value = _room;
             }
@@ -977,7 +1026,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
         globalSocket.value.on(
           "newUserConnected",
           (clientCount, _id, _ids, _clientProps) => {
-            console.log("clientCount :>> ", clientCount);
             let alreadyHasUser = false;
             for (let i = 0; i < Object.keys(clients).length; i++) {
               if (Object.keys(clients)[i] == _id) {
@@ -985,9 +1033,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
                 break;
               }
             }
-            console.log("_id :>> ", _id);
-            console.log("id :>> ", id);
-            console.log("alreadyHasUser :>> ", alreadyHasUser);
             if (_id != id && !alreadyHasUser) {
               gltfLoader.load(_clientProps[_id].avatar, (newPlayerGltf) => {
                 const newPlayer = newPlayerGltf.scene;
@@ -999,7 +1044,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
                   ),
                 };
 
-                newPlayer.position.set(0, -17, 120);
+                newPlayer.position.set(0, 100, 120);
 
                 newPlayer.children[0].translateY(-1.5);
                 newPlayer.children[0].rotateY(Math.PI / 2);
@@ -1007,6 +1052,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
                 newPlayer.children[0].castShadow = false;
                 newPlayer.children[0].receiveShadow = false;
+
                 const newPlayertextGeometry = new TextGeometry(
                   _clientProps[_id].name,
                   {
@@ -1067,9 +1113,9 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
         globalSocket.value.on("userDisconnected", (clientCount, _id, _ids) => {
           //Update the data from the server
-          if (_id != id) {
-            scene.remove(clients[_id].mesh);
-            scene.remove(clients[_id].nameMesh);
+          if (_id != id && clients[_id]) {
+            if (clients[_id].mesh) scene.remove(clients[_id].mesh);
+            if (clients[_id].nameMesh) scene.remove(clients[_id].nameMesh);
 
             delete clients[_id];
           }
@@ -1080,7 +1126,10 @@ export default (overlayElement, joystick, loadingBarElement) => {
         //Update when one of the users moves in space
         globalSocket.value.on("userPositions", (_clientProps) => {
           for (let i = 0; i < Object.keys(_clientProps).length; i++) {
-            if (Object.keys(_clientProps)[i] != id) {
+            if (
+              Object.keys(_clientProps)[i] != id &&
+              clients[Object.keys(_clientProps)[i]]
+            ) {
               const otherPlayerState =
                 _clientProps[Object.keys(_clientProps)[i]].state;
 

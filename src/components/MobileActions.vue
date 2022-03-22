@@ -1,9 +1,19 @@
 <template>
   <div>
     <div
-      v-touch:tap="onRun"
+      v-touch:tap="onJump"
       v-if="deviceType() !== 'desktop'"
       class="main-button"
+    >
+      <div class="button-style">
+        <img style="height: 25px" src="../assets/icons/Jump.svg" alt="enter" />
+      </div>
+    </div>
+    <div
+      v-touch:tap="onRun"
+      v-if="deviceType() !== 'desktop'"
+      style="bottom: 105px; right: 90px"
+      class="action-button"
     >
       <div class="button-style">
         <img src="../assets/icons/Running.svg" v-if="running" alt="enter" />
@@ -18,16 +28,6 @@
     >
       <div class="button-style">
         <span>{{ currentIntersect.userData.house.sold ? "Sell" : "Buy" }}</span>
-      </div>
-    </div>
-    <div
-      v-touch:tap="onJump"
-      v-if="deviceType() !== 'desktop'"
-      style="bottom: 105px; right: 90px"
-      class="action-button"
-    >
-      <div class="button-style">
-        <img style="height: 25px" src="../assets/icons/Jump.svg" alt="enter" />
       </div>
     </div>
 

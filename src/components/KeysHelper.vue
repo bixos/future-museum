@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div id="chatbox">
     <div class="chat">
       <div
         v-if="deviceType() !== 'desktop'"
@@ -119,7 +119,12 @@ export default {
     const playerName = ref("Guest");
     playerName.value = localStorage.playerName;
     onMounted(() => {
-      console.log("props.socket :>> ", props.socket);
+      if (deviceType() !== "desktop")
+        window.addEventListener("click", function (e) {
+          if (!document.getElementById("chatbox").contains(e.target)) {
+            closeChat();
+          }
+        });
       if (props.socket) {
         props.socket.on("chat message", (message) => {
           messages.value.push(message);
@@ -130,11 +135,13 @@ export default {
 
     const sendMessage = () => {
       console.log("props.room :>> ", props.room);
-      props.socket.emit("chat message", {
-        msg: inputMessage.value,
-        room: props.room,
-      });
-      inputMessage.value = "";
+      if (inputMessage.value.length > 0) {
+        props.socket.emit("chat message", {
+          msg: inputMessage.value,
+          room: props.room,
+        });
+        inputMessage.value = "";
+      }
     };
     const handleTypingState = () => {
       emit("handleTypingState");
@@ -176,6 +183,7 @@ export default {
 </style>
 <style lang="scss" scoped>
 .chat {
+  z-index: 9999999999999999999999;
   position: absolute;
   bottom: 20px;
   left: 20px;
@@ -192,7 +200,7 @@ export default {
   @media only screen and (max-width: 1024px) {
     left: 10px;
     right: 10px;
-    bottom: 30vh;
+    bottom: 30px;
   }
   .close-chat {
     position: absolute;
