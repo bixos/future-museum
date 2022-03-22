@@ -466,10 +466,10 @@ export default (overlayElement, joystick, loadingBarElement) => {
         }
       }
     }
-    if (pingPlayerMove === 5) {
-    } else {
-      pingPlayerMove++;
-    }
+    // if (pingPlayerMove === 5) {
+    // } else {
+    //   pingPlayerMove++;
+    // }
 
     if (playerMixer) {
       playerMixer.update(deltaTime);
