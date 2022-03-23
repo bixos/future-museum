@@ -37,6 +37,9 @@
       v-if="deviceType() !== 'desktop'"
       class="action-button"
     >
+      <div v-if="notification > 0" class="notification">
+        {{ notification > 10 ? 10 : notification }}
+      </div>
       <div class="button-style">
         <img style="height: 20px" src="../assets/icons/Chat.svg" alt="enter" />
       </div>
@@ -49,7 +52,7 @@ import { deviceType } from "../experience/helper";
 import { ref } from "vue";
 
 export default {
-  props: ["interactHint", "currentIntersect"],
+  props: ["interactHint", "currentIntersect", "notification"],
   setup(_, { emit }) {
     const running = ref(false);
     const onReset = () => {
@@ -152,6 +155,20 @@ export default {
     border: 1px solid #239eda;
     box-shadow: inset 0px -4px 10px rgb(0 27 121 / 50%),
       inset 0px 4px 11px #63f6ff;
+  }
+  .notification {
+    position: absolute;
+    top: -6px;
+    left: -5px;
+    background: #d13737;
+    border: 1px solid white;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    border-radius: 50%;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
   }
 }
 </style>

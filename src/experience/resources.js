@@ -44,6 +44,12 @@ export default (loadingManager, THREE, MeshBVH, fn) => {
        * Get Geometries
        */
       if (
+        c.name.indexOf("cloud") !== -1 ||
+        (c.parent && c.parent.name.indexOf("cloud") !== -1)
+      ) {
+        Map.remove(c);
+      }
+      if (
         c.name.indexOf("ocean") !== -1 ||
         c.name.indexOf("cloud") !== -1 ||
         c.name.indexOf("area") !== -1 ||

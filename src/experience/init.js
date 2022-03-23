@@ -1,3 +1,5 @@
+import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
+
 export default (THREE, OrbitControls) => {
   /**
    * Renderer Setup
@@ -19,6 +21,17 @@ export default (THREE, OrbitControls) => {
    * Scene Setup
    */
   const scene = new THREE.Scene();
+
+  const cubeTextureLoader = new THREE.CubeTextureLoader();
+  const environmentMap = cubeTextureLoader.load([
+    "/environmentMaps/Standard-Cube-Map/px.png",
+    "/environmentMaps/Standard-Cube-Map/nx.png",
+    "/environmentMaps/Standard-Cube-Map/py.png",
+    "/environmentMaps/Standard-Cube-Map/ny.png",
+    "/environmentMaps/Standard-Cube-Map/pz.png",
+    "/environmentMaps/Standard-Cube-Map/nz.png",
+  ]);
+  scene.background = environmentMap;
   // scene.fog = new THREE.Fog(0xcccccc, 400, 0);
   /**
    * Lights
@@ -38,12 +51,9 @@ export default (THREE, OrbitControls) => {
   light.shadow.normalBias = 0.5;
   scene.add(light);
 
-  var hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.6);
+  var hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff, 0.9);
   hemiLight.color.setHSL(0.6, 0.75, 0.5);
   hemiLight.groundColor.setHSL(0.095, 0.5, 0.5);
-  hemiLight.position.set(0, 500, 0);
-  // const ambientLight = new THREE.AmbientLight(0xffffff, 0.3);
-  // ambientLight.color.setHSL(0.6, 0.75, 0.5);
 
   scene.add(hemiLight);
 

@@ -443,8 +443,9 @@ export default (overlayElement, joystick, loadingBarElement) => {
     if (player && collider && houseDetails.value === false) {
       for (let i = 0; i < physicsSteps; i++) {
         if (player.position.y < -18) {
-          player.position.y = -16;
+          reset(camera, controls);
         }
+
         updatePlayer(deltaTime / physicsSteps);
 
         if (playerNameMesh && playerNameMesh.position) {
@@ -765,7 +766,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
     }
   });
 
-  const { renderer, camera, scene, controls, clock } = init(
+  const { renderer, camera, scene, controls, clock, composer } = init(
     THREE,
     OrbitControls
   );
@@ -846,8 +847,8 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
       player.children[0].rotateZ(-Math.PI);
 
-      player.children[0].castShadow = false;
-      player.children[0].receiveShadow = false;
+      player.children[0].castShadow = true;
+      player.children[0].receiveShadow = true;
 
       playerMixer = new THREE.AnimationMixer(player);
       falling = playerMixer.clipAction(fallingFbx.animations[0]);
@@ -882,18 +883,15 @@ export default (overlayElement, joystick, loadingBarElement) => {
         scene.add(playerNameMesh);
         scene.add(player);
         scene.add(Map);
-        renderer.shadowMap.autoUpdate = false;
-        renderer.shadowMap.needsUpdate = true;
+        // renderer.shadowMap.autoUpdate = false;
+        // renderer.shadowMap.needsUpdate = true;
         camera.position.add(player.position);
         controls.update();
-
-        "http://localhost:3000",
-          (globalSocket.value = io(
-            "https://pacific-island-87082.herokuapp.com/",
-            {
-              transports: ["websocket", "polling", "flashsocket"],
-            }
-          ));
+        // "http://localhost:3000",
+        // "https://pacific-island-87082.herokuapp.com/",
+        globalSocket.value = io("https://bixosverse.bixos.io/", {
+          transports: ["websocket", "polling", "flashsocket"],
+        });
 
         gettingName.value = false;
         gsap
@@ -953,8 +951,8 @@ export default (overlayElement, joystick, loadingBarElement) => {
                     newPlayer.children[0].rotateY(Math.PI / 2);
 
                     newPlayer.children[0].rotateZ(-Math.PI);
-                    newPlayer.children[0].castShadow = false;
-                    newPlayer.children[0].receiveShadow = false;
+                    newPlayer.children[0].castShadow = true;
+                    newPlayer.children[0].receiveShadow = true;
 
                     const newPlayertextGeometry = new TextGeometry(
                       _clientProps[_ids[i]].name,

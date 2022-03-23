@@ -15,11 +15,11 @@
           :key="`${message.name}-${Math.random()}`"
           class="message-container"
         >
-          <span
+          <!-- <span
             class="chat-time"
             :style="playerName === message.name ? '' : 'color:#2A3869'"
             >[15:31]
-          </span>
+          </span> -->
           <span
             class="chat-name"
             :style="playerName === message.name ? '' : 'color:#2A3869'"
@@ -117,7 +117,11 @@ export default {
     const inputMessage = ref("");
     const chatContainer = ref("");
     const playerName = ref("Guest");
+    let unseenMessages = 0;
     playerName.value = localStorage.playerName;
+    const isBlank = (str) => {
+      return !str || /^\s*$/.test(str);
+    };
     onMounted(() => {
       if (deviceType() !== "desktop")
         window.addEventListener("click", function (e) {
@@ -128,27 +132,35 @@ export default {
       if (props.socket) {
         props.socket.on("chat message", (message) => {
           messages.value.push(message);
-          chatContainer.value.scrollTo(0, chatContainer.value.scrollHeight);
+          unseenMessages++;
+          emit("updateUnseenMessages", unseenMessages);
+          // .scrollTo(0, chatContainer.value.scrollHeight);
+          setTimeout(() => {
+            chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
+          }, 100);
         });
       }
     });
 
     const sendMessage = () => {
       console.log("props.room :>> ", props.room);
-      if (inputMessage.value.length > 0) {
+      if (!isBlank(inputMessage.value)) {
         props.socket.emit("chat message", {
           msg: inputMessage.value,
           room: props.room,
         });
-        inputMessage.value = "";
       }
+      inputMessage.value = "";
     };
     const handleTypingState = () => {
       emit("handleTypingState");
     };
     const closeChat = () => {
       emit("closeChat");
+      unseenMessages = 0;
+      emit("updateUnseenMessages", unseenMessages);
     };
+
     return {
       messages,
       inputMessage,
@@ -183,7 +195,7 @@ export default {
 </style>
 <style lang="scss" scoped>
 .chat {
-  z-index: 9999999999999999999999;
+  z-index: 99999999;
   position: absolute;
   bottom: 20px;
   left: 20px;

@@ -173,6 +173,7 @@
       :room="room"
       @handleTypingState="handleTypingState()"
       @closeChat="chatOpen = false"
+      @updateUnseenMessages="updateNotification"
     />
     <MobileActions
       :interactHint="interactHint"
@@ -183,6 +184,7 @@
       @onJump="triggerJump()"
       @openChat="chatOpen = true"
       v-show="!gettingName"
+      :notification="notification"
     />
 
     <div
@@ -192,6 +194,7 @@
         -ms-user-select: none;
         user-select: none;
         -o-user-select: none;
+        z-index: 99999999999999999;
       "
       unselectable="on"
       v-if="interactHint && deviceType() === 'desktop'"
@@ -246,6 +249,11 @@ export default {
     const frameContainer = ref(null);
 
     const overlayElement = ref({});
+    const notification = ref(0);
+    const updateNotification = (val) => {
+      notification.value = val;
+    };
+
     const joystick = ref({});
     const loadingBarElement = ref({});
     const avatarURL = ref(null);
@@ -368,6 +376,8 @@ export default {
       currentIntersect,
       canGoIn,
       changeUser,
+      notification,
+      updateNotification,
     };
   },
   data() {
