@@ -178,7 +178,6 @@
     <MobileActions
       :interactHint="interactHint"
       :currentIntersect="currentIntersect"
-      @onReset="reset(camera, controls)"
       @onInteract="interact()"
       @onRun="triggerRun()"
       @onJump="triggerJump()"
@@ -186,6 +185,7 @@
       v-show="!gettingName"
       :notification="notification"
     />
+    <!-- @onReset="reset(camera, controls)" -->
 
     <div
       style="

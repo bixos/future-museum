@@ -49,8 +49,8 @@ export default (loadingManager, THREE, MeshBVH, fn) => {
       ) {
         Map.remove(c);
       }
+      // c.name.indexOf("ocean") !== -1 ||
       if (
-        c.name.indexOf("ocean") !== -1 ||
         c.name.indexOf("cloud") !== -1 ||
         c.name.indexOf("area") !== -1 ||
         c.name.indexOf("token") !== -1 ||

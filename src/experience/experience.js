@@ -144,6 +144,12 @@ export default (overlayElement, joystick, loadingBarElement) => {
         currentAction = wallk;
       }
     }
+    globalSocket.value.emit("move", {
+      position: [player.position.x, player.position.y, player.position.z],
+      rotation: [player.rotation.x, player.rotation.y, player.rotation.z],
+      state: currentAction._clip.name,
+      room: room.value,
+    });
   };
 
   const stopState = () => {
@@ -161,6 +167,12 @@ export default (overlayElement, joystick, loadingBarElement) => {
       }
       currentAction = stand;
     }
+    globalSocket.value.emit("move", {
+      position: [player.position.x, player.position.y, player.position.z],
+      rotation: [player.rotation.x, player.rotation.y, player.rotation.z],
+      state: currentAction._clip.name,
+      room: room.value,
+    });
   };
 
   const reset = (camera, controls) => {
@@ -193,6 +205,12 @@ export default (overlayElement, joystick, loadingBarElement) => {
       playerVelocity.y = 10.0;
       playJumpForward();
     }
+    globalSocket.value.emit("move", {
+      position: [player.position.x, player.position.y, player.position.z],
+      rotation: [player.rotation.x, player.rotation.y, player.rotation.z],
+      state: currentAction._clip.name,
+      room: room.value,
+    });
   };
 
   const bigHouses = [
@@ -421,6 +439,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
   let DOWN_DIRECTION = new THREE.Vector3(0, -1, 0);
   let oldElapsedTime = 0;
   let pingPlayerMove = 0;
+  let previousPlayerPosition = new THREE.Vector3(0, 0, 0);
   const render = () => {
     // stats.update();
     const elapsedTime = clock.getElapsedTime();
@@ -456,21 +475,21 @@ export default (overlayElement, joystick, loadingBarElement) => {
           );
           playerNameMesh.rotation.y = controls.getAzimuthalAngle();
         }
-        if (globalSocket.value && id && (room.value || room.value === 0)) {
-          globalSocket.value.emit("move", {
-            position: [player.position.x, player.position.y, player.position.z],
-            rotation: [player.rotation.x, player.rotation.y, player.rotation.z],
-            state: currentAction._clip.name,
-            room: room.value,
-          });
-          pingPlayerMove = 0;
-        }
       }
     }
-    // if (pingPlayerMove === 5) {
-    // } else {
-    //   pingPlayerMove++;
-    // }
+
+    if (player && !previousPlayerPosition.equals(player.position)) {
+      if (globalSocket.value && id && (room.value || room.value === 0)) {
+        globalSocket.value.emit("move", {
+          position: [player.position.x, player.position.y, player.position.z],
+          rotation: [player.rotation.x, player.rotation.y, player.rotation.z],
+          state: currentAction._clip.name,
+          room: room.value,
+        });
+        pingPlayerMove = 0;
+        previousPlayerPosition.copy(player.position);
+      }
+    }
 
     if (playerMixer) {
       playerMixer.update(deltaTime);
@@ -548,6 +567,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
       signToFlip.rotation.y -= Math.PI;
       signToFlip = null;
     }
+    water.material.uniforms["time"].value += 0.2 / 60.0;
 
     renderer.render(scene, camera);
   };
@@ -766,10 +786,11 @@ export default (overlayElement, joystick, loadingBarElement) => {
     }
   });
 
-  const { renderer, camera, scene, controls, clock, composer } = init(
+  const { renderer, camera, scene, controls, clock, water } = init(
     THREE,
     OrbitControls
   );
+
   const changeUser = () => {
     // globalSocket.value.emit("refreshUser");
     for (const key in clients) {
@@ -825,6 +846,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
       gettingName.value = true;
     }
   });
+
   const start = () => {
     /**
      * Player Setup
@@ -846,9 +868,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
       player.children[0].rotateY(Math.PI / 2);
 
       player.children[0].rotateZ(-Math.PI);
-
-      player.children[0].castShadow = true;
-      player.children[0].receiveShadow = true;
 
       playerMixer = new THREE.AnimationMixer(player);
       falling = playerMixer.clipAction(fallingFbx.animations[0]);
@@ -883,6 +902,8 @@ export default (overlayElement, joystick, loadingBarElement) => {
         scene.add(playerNameMesh);
         scene.add(player);
         scene.add(Map);
+        player.castShadow = true;
+        player.receiveShadow = true;
         // renderer.shadowMap.autoUpdate = false;
         // renderer.shadowMap.needsUpdate = true;
         camera.position.add(player.position);
@@ -1111,12 +1132,12 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
         globalSocket.value.on("userDisconnected", (clientCount, _id, _ids) => {
           //Update the data from the server
-          if (_id != id && clients[_id]) {
-            if (clients[_id].mesh) scene.remove(clients[_id].mesh);
-            if (clients[_id].nameMesh) scene.remove(clients[_id].nameMesh);
+          // if (_id != id && clients[_id]) {
+          if (clients[_id].mesh) scene.remove(clients[_id].mesh);
+          if (clients[_id].nameMesh) scene.remove(clients[_id].nameMesh);
 
-            delete clients[_id];
-          }
+          delete clients[_id];
+          // }
         });
 
         globalSocket.value.on("connect", () => {});
