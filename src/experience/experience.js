@@ -690,12 +690,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
       // overlayElement.value.classList.add("ended");
       loading.value = false;
       console.log("loading.value :>> ", loading.value);
-      if (localStorage.avatarName) {
-        gettingName.value = false;
-        start();
-      } else {
-        gettingName.value = true;
-      }
     },
     (itemUrl, itemsLoaded, itemsTotal) => {
       if (loading.value) {
@@ -719,6 +713,12 @@ export default (overlayElement, joystick, loadingBarElement) => {
     JumpFbx = data.JumpFbx;
     WalkingFbx = data.WalkingFbx;
     mars = data.mars;
+    if (localStorage.avatarName) {
+      gettingName.value = false;
+      start();
+    } else {
+      gettingName.value = true;
+    }
   });
 
   const start = () => {
