@@ -1,8 +1,7 @@
 import { ref, onMounted, provide } from "vue";
 import nipplejs from "nipplejs";
-// import Stats from "stats.js";
-import * as SkeletonUtils from "three/examples/jsm/utils/SkeletonUtils.js";
-
+import nftPositions from "./nftPositions";
+import TWEEN from "@tweenjs/tween.js";
 import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 
@@ -17,10 +16,6 @@ import {
 THREE.Mesh.prototype.raycast = acceleratedRaycast;
 THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
 THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
-// stats setup
-// let stats;
-// stats = new Stats();
-// document.body.appendChild(stats.dom);
 
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
@@ -35,15 +30,13 @@ let room = ref(null);
 let clients = new Object();
 
 const globalSocket = ref(null);
+THREE.Cache.enabled = true;
 export default (overlayElement, joystick, loadingBarElement) => {
   /**
    * Interface variables
    */
-  const houseDetails = ref(false);
-  const interactHint = ref(false);
   const typing = ref(false);
   const chatOpen = ref(false);
-  const house = ref({});
   const playerName = ref("Guest");
   playerName.value = localStorage.playerName
     ? localStorage.playerName
@@ -51,9 +44,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
   /**
    * Ray Variables
    */
-  let currentIntersect = ref(null);
-  let prevIntersect = null;
-  let signToFlip = null;
   let fallingFbx = null;
   let BreathingIdleFbx = null;
   let RunningFbx = null;
@@ -101,14 +91,14 @@ export default (overlayElement, joystick, loadingBarElement) => {
   let wallk = null;
   let currentAction = null;
   let fadingSpeed = 0.2;
-  // let playerGLTF = null;
   let gltfLoader = null;
 
   /**
    * Setup Variables
    */
-  let playerNameMesh, player, Map, collider, houses, signs, mapMixer;
-  let buyArea = [];
+
+  let currentNft = ref(null);
+  let playerNameMesh, player, Map, collider, mapMixer, mars;
 
   const handleTypingState = () => {
     typing.value = !typing.value;
@@ -120,6 +110,8 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
     currentAction = jumpForward;
   };
+
+  let controls = null;
 
   const playWallkingRunning = () => {
     if (
@@ -178,14 +170,14 @@ export default (overlayElement, joystick, loadingBarElement) => {
   const reset = (camera, controls) => {
     if (player) {
       playerVelocity.set(0, 0, 0);
-      player.position.set(0, 100, 120);
+      player.position.set(-13, -1.35, 0);
 
       camera.position.add(player.position);
       controls.update();
 
       currentAction.stop();
-      falling.reset().play();
-      currentAction = falling;
+      stand.reset().play();
+      currentAction = stand;
       setTimeout(() => {
         currentAction.fadeOut(0.05);
         stand.reset().fadeIn(0.05).play();
@@ -211,28 +203,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
       state: currentAction._clip.name,
       room: room.value,
     });
-  };
-
-  const bigHouses = [
-    "area007",
-    "area016",
-    "area024",
-    "area025",
-    "area040",
-    "area041",
-  ];
-
-  const interact = () => {
-    if (
-      currentIntersect.value &&
-      currentIntersect.value.name.indexOf("area") !== -1
-    ) {
-      if (bigHouses.includes(currentIntersect.value.name)) {
-        currentIntersect.value.userData.house.isBigHouse = true;
-      }
-      house.value = currentIntersect.value.userData.house;
-      houseDetails.value = true;
-    }
   };
 
   const rotateQuarternion = new THREE.Quaternion();
@@ -434,46 +404,48 @@ export default (overlayElement, joystick, loadingBarElement) => {
     }
   };
 
-  let up = true;
-  const raycaster = new THREE.Raycaster();
-  let DOWN_DIRECTION = new THREE.Vector3(0, -1, 0);
+  /**
+   * Render
+   */
+
   let oldElapsedTime = 0;
-  let pingPlayerMove = 0;
   let previousPlayerPosition = new THREE.Vector3(0, 0, 0);
+
   const render = () => {
+    TWEEN.update();
     // stats.update();
     const elapsedTime = clock.getElapsedTime();
     const deltaTime = elapsedTime - oldElapsedTime;
     oldElapsedTime = elapsedTime;
 
     requestAnimationFrame(render);
+    if (controls) {
+      if (firstPerson) {
+        controls.maxPolarAngle = Math.PI;
+        controls.minDistance = 1e-4;
+        controls.maxDistance = 1e-4;
+      } else {
+        controls.maxPolarAngle = Math.PI / 2;
+        controls.minDistance = 1;
+        controls.maxDistance = 2;
+      }
 
-    // const delta = Math.min(clock.getDelta(), 0.1);
-    if (firstPerson) {
-      controls.maxPolarAngle = Math.PI;
-      controls.minDistance = 1e-4;
-      controls.maxDistance = 1e-4;
-    } else {
-      controls.maxPolarAngle = Math.PI / 2;
-      controls.minDistance = 2;
-      controls.maxDistance = 10;
-    }
+      if (player && collider) {
+        for (let i = 0; i < physicsSteps; i++) {
+          if (player.position.y < -200) {
+            reset(camera, controls);
+          }
 
-    if (player && collider && houseDetails.value === false) {
-      for (let i = 0; i < physicsSteps; i++) {
-        if (player.position.y < -18) {
-          reset(camera, controls);
-        }
+          updatePlayer(deltaTime / physicsSteps);
 
-        updatePlayer(deltaTime / physicsSteps);
-
-        if (playerNameMesh && playerNameMesh.position) {
-          playerNameMesh.position.set(
-            player.position.x,
-            player.position.y + 1,
-            player.position.z
-          );
-          playerNameMesh.rotation.y = controls.getAzimuthalAngle();
+          if (playerNameMesh && playerNameMesh.position) {
+            playerNameMesh.position.set(
+              player.position.x,
+              player.position.y + 0.05,
+              player.position.z
+            );
+            playerNameMesh.quaternion.copy(camera.quaternion);
+          }
         }
       }
     }
@@ -486,7 +458,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
           state: currentAction._clip.name,
           room: room.value,
         });
-        pingPlayerMove = 0;
         previousPlayerPosition.copy(player.position);
       }
     }
@@ -506,70 +477,30 @@ export default (overlayElement, joystick, loadingBarElement) => {
     if (mapMixer) {
       mapMixer.update(deltaTime);
     }
-
     if (player) {
-      raycaster.set(
-        new THREE.Vector3(
-          player.position.x,
-          player.position.y,
-          player.position.z
-        ),
-        DOWN_DIRECTION
-      );
-    }
-
-    const intersects = raycaster.intersectObjects(buyArea);
-    if (
-      currentIntersect.value &&
-      !houseDetails.value &&
-      currentIntersect.value.name.indexOf("area") !== -1
-    ) {
-      interactHint.value = true;
-    } else {
-      interactHint.value = false;
-    }
-
-    if (intersects.length) {
-      if (!currentIntersect.value) {
-        currentIntersect.value = intersects[0].object.parent;
-      }
-      currentIntersect.value = intersects[0].object.parent;
-      if (currentIntersect.value.name.indexOf("area") !== -1) {
-        currentIntersect.value.children[3].rotation.y += 0.02;
-        if (currentIntersect.value.children[2].position.y < 5) {
-          currentIntersect.value.children[2].position.y += 0.2;
-          currentIntersect.value.children[3].position.y += 0.125;
-        } else {
-          if (up) {
-            if (currentIntersect.value.children[2].position.y > 5.4) up = false;
-            else currentIntersect.value.children[2].position.y += 0.01;
-          } else {
-            if (currentIntersect.value.children[2].position.y < 5.2) up = true;
-            else currentIntersect.value.children[2].position.y -= 0.01;
-          }
+      currentNft.value = null;
+      for (let nftIndex = 0; nftIndex < nftPositions.length; nftIndex++) {
+        const nft = nftPositions[nftIndex];
+        if (
+          player.position.x > nft.minX &&
+          player.position.x < nft.maxX &&
+          player.position.z > nft.minZ &&
+          player.position.z < nft.maxZ
+        ) {
+          currentNft.value = nft.data;
+          break;
         }
       }
-    } else {
-      if (currentIntersect.value) {
-        prevIntersect = currentIntersect.value;
-      }
-      currentIntersect.value = null;
     }
-
-    if (prevIntersect && prevIntersect.name.indexOf("area") !== -1) {
-      if (prevIntersect.children[2].position.y > 0) {
-        prevIntersect.children[2].position.y -= 0.4;
-        prevIntersect.children[3].position.y -= 0.25;
-      } else prevIntersect = null;
+    if (mars) {
+      // console.log("mars :>> ", mars);
+      mars.rotation.y += 0.001;
     }
-
-    if (signToFlip) {
-      signToFlip.rotation.y -= Math.PI;
-      signToFlip = null;
-    }
-    water.material.uniforms["time"].value += 0.2 / 60.0;
-
     renderer.render(scene, camera);
+    // scene.traverse(darkenNonBloomed);
+    // bloomComposer.render();
+    // scene.traverse(restoreMaterial);
+    // finalComposer.render();
   };
 
   window.addEventListener("keydown", (e) => {
@@ -623,9 +554,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
         case "ShiftLeft":
           running = false;
           playWallkingRunning();
-          break;
-        case "Enter":
-          interact();
           break;
         case "KeyR":
           reset(camera, controls);
@@ -700,67 +628,9 @@ export default (overlayElement, joystick, loadingBarElement) => {
     }
   });
 
-  const container = ref({});
   const loading = ref(true);
   const gettingName = ref(false);
-  const balance = ref(1000000);
-  const celebrate = ref(false);
-  const hitSound = new Audio(require("../assets/AudioBuy.mp3"));
-  let defaultMaterial = null;
 
-  const buyHouse = () => {
-    if (balance.value >= house.value.price) {
-      if (!defaultMaterial) {
-        defaultMaterial = currentIntersect.value.children[1].material.clone();
-      }
-      var material2 = currentIntersect.value.children[1].material.clone();
-      material2.color = new THREE.Color(0xff0000);
-      currentIntersect.value.children[1].material = material2;
-      const number = currentIntersect.value.name.replace(/^\D+/g, "");
-      const sign = signs.find((sign) => {
-        const signNumber = sign.name.replace(/^\D+/g, "");
-        return number === signNumber;
-      });
-      signToFlip = sign;
-
-      house.value.sold = true;
-      house.value.Owner = "You";
-      houseDetails.value = false;
-      balance.value -= house.value.price;
-      currentIntersect.value.userData.house = house.value;
-      celebrate.value = true;
-      hitSound.currentTime = 0;
-      hitSound.volume = 1;
-      hitSound.play();
-      setTimeout(() => {
-        celebrate.value = false;
-      }, 3000);
-    }
-  };
-  const sellHouse = () => {
-    // var material2 = currentIntersect.value.children[1].material.clone();
-    // material2.color = new THREE.Color(0x00a3e0);
-    currentIntersect.value.children[1].material = defaultMaterial;
-    const number = currentIntersect.value.name.replace(/^\D+/g, "");
-
-    const sign = signs.find((sign) => {
-      const signNumber = sign.name.replace(/^\D+/g, "");
-      return number === signNumber;
-    });
-    signToFlip = sign;
-    house.value.sold = false;
-    house.value.Owner = "Bixos Inc";
-    houseDetails.value = false;
-    balance.value += house.value.price;
-    currentIntersect.value.userData.house = house.value;
-    celebrate.value = true;
-    hitSound.currentTime = 0;
-    hitSound.volume = 1;
-    hitSound.play();
-    setTimeout(() => {
-      celebrate.value = false;
-    }, 3000);
-  };
   window.addEventListener("touchstart", () => {
     var element = document.documentElement; // Make the body go full screen.
     var requestMethod =
@@ -786,13 +656,18 @@ export default (overlayElement, joystick, loadingBarElement) => {
     }
   });
 
-  const { renderer, camera, scene, controls, clock, water } = init(
-    THREE,
-    OrbitControls
-  );
+  const {
+    renderer,
+    camera,
+    scene,
+    clock,
+    bloomComposer,
+    finalComposer,
+    darkenNonBloomed,
+    restoreMaterial,
+  } = init(THREE);
 
   const changeUser = () => {
-    // globalSocket.value.emit("refreshUser");
     for (const key in clients) {
       scene.remove(clients[key].mesh);
       scene.remove(clients[key].nameMesh);
@@ -814,6 +689,13 @@ export default (overlayElement, joystick, loadingBarElement) => {
     () => {
       // overlayElement.value.classList.add("ended");
       loading.value = false;
+      console.log("loading.value :>> ", loading.value);
+      if (localStorage.avatarName) {
+        gettingName.value = false;
+        start();
+      } else {
+        gettingName.value = true;
+      }
     },
     (itemUrl, itemsLoaded, itemsTotal) => {
       if (loading.value) {
@@ -829,9 +711,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
   loadResources(loadingManager, THREE, MeshBVH, (data) => {
     Map = data.Map;
     collider = data.collider;
-    houses = data.houses;
-    buyArea = data.buyArea;
-    signs = data.signs;
     mapMixer = data.mapMixer;
     gltfLoader = data.gltfLoader;
     fallingFbx = data.fallingFbx;
@@ -839,12 +718,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
     RunningFbx = data.RunningFbx;
     JumpFbx = data.JumpFbx;
     WalkingFbx = data.WalkingFbx;
-    if (localStorage.avatarName) {
-      gettingName.value = false;
-      start();
-    } else {
-      gettingName.value = true;
-    }
+    mars = data.mars;
   });
 
   const start = () => {
@@ -853,7 +727,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
      */
     gltfLoader.load(localStorage.avatarName, (readyPlayer) => {
       player = readyPlayer.scene;
-      // player.scale.set(0.01, 0.01, 0.01);
+      player.scale.set(0.5, 0.5, 0.5);
       player.playerInfo = {
         radius: 0.5,
         segment: new THREE.Line3(
@@ -862,12 +736,27 @@ export default (overlayElement, joystick, loadingBarElement) => {
         ),
       };
 
-      player.position.set(0, 100, 120);
-
-      player.children[0].translateY(-1.5);
+      player.position.set(-13, -1.35, 0);
+      player.children[0].translateY(-2.05);
       player.children[0].rotateY(Math.PI / 2);
-
       player.children[0].rotateZ(-Math.PI);
+      player.rotation.y -= Math.PI / 2;
+      const target = player.position.clone();
+      target.y += 1;
+      target.x -= 2;
+      var tween = new TWEEN.Tween(camera.position).to(target, 3000);
+      // tween.easing(TWEEN.Easing.Elastic.InOut);
+      tween.onUpdate(function () {
+        camera.lookAt(player.position);
+      });
+      tween.start();
+
+      setTimeout(() => {
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enablePan = false;
+        controls.target.copy(player.position);
+        controls.update();
+      }, 3000);
 
       playerMixer = new THREE.AnimationMixer(player);
       falling = playerMixer.clipAction(fallingFbx.animations[0]);
@@ -875,17 +764,16 @@ export default (overlayElement, joystick, loadingBarElement) => {
       jumpForward = playerMixer.clipAction(JumpFbx.animations[0]);
       runing = playerMixer.clipAction(RunningFbx.animations[0]);
       wallk = playerMixer.clipAction(WalkingFbx.animations[0]);
-      falling.play();
-      currentAction = falling;
+      stand.play();
+      currentAction = stand;
       const loader = new FontLoader();
       loader.load("/fonts/helvetiker_regular.typeface.json", (font) => {
         const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
-        // const originalPlayer = SkeletonUtils.clone(player);
         localStorage.playerName = playerName.value;
 
         const textGeometry = new TextGeometry(playerName.value, {
           font: font,
-          size: 0.2,
+          size: 0.04,
           height: 0.01,
           curveSegments: 2,
           bevelEnabled: true,
@@ -895,19 +783,22 @@ export default (overlayElement, joystick, loadingBarElement) => {
           bevelSegments: 1,
         });
         textGeometry.center();
-
-        playerNameMesh = new THREE.Mesh(textGeometry, material);
-        playerNameMesh.translateY(0.6);
-
-        scene.add(playerNameMesh);
-        scene.add(player);
         scene.add(Map);
         player.castShadow = true;
         player.receiveShadow = true;
-        // renderer.shadowMap.autoUpdate = false;
-        // renderer.shadowMap.needsUpdate = true;
-        camera.position.add(player.position);
-        controls.update();
+        playerNameMesh = new THREE.Mesh(textGeometry, material);
+        playerNameMesh.quaternion.copy(camera.quaternion);
+        scene.add(playerNameMesh);
+        scene.add(player);
+
+        playerNameMesh.position.set(
+          player.position.x,
+          player.position.y + 0.05,
+          player.position.z
+        );
+
+        // camera.position.add(player.position);
+        // controls.update();
         // "http://localhost:3000",
         // "https://pacific-island-87082.herokuapp.com/",
         globalSocket.value = io("https://bixosverse.bixos.io/", {
@@ -922,8 +813,8 @@ export default (overlayElement, joystick, loadingBarElement) => {
           })
           .to(".overlay", { opacity: 0 })
           .then(() => {
-            falling.fadeOut(0.05);
-            stand.reset().fadeIn(0.05).play();
+            // falling.fadeOut(0.05);
+            // stand.reset().fadeIn(0.05).play();
             currentAction = stand;
           });
 
@@ -958,6 +849,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
                   _clientProps[_ids[i]].avatar,
                   (newPlayerGltf) => {
                     const newPlayer = newPlayerGltf.scene;
+                    newPlayer.scale.set(0.5, 0.5, 0.5);
                     newPlayer.playerInfo = {
                       radius: 0.5,
                       segment: new THREE.Line3(
@@ -966,9 +858,9 @@ export default (overlayElement, joystick, loadingBarElement) => {
                       ),
                     };
 
-                    newPlayer.position.set(0, 100, 120);
+                    newPlayer.position.set(-13, -1.35, 0);
 
-                    newPlayer.children[0].translateY(-1.5);
+                    newPlayer.children[0].translateY(-2.05);
                     newPlayer.children[0].rotateY(Math.PI / 2);
 
                     newPlayer.children[0].rotateZ(-Math.PI);
@@ -979,7 +871,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
                       _clientProps[_ids[i]].name,
                       {
                         font: font,
-                        size: 0.2,
+                        size: 0.04,
                         height: 0.01,
                         curveSegments: 2,
                         bevelEnabled: true,
@@ -995,7 +887,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
                       newPlayertextGeometry,
                       material
                     );
-                    newPlayerText.translateY(0.6);
 
                     clients[_ids[i]] = {
                       mesh: newPlayer,
@@ -1055,6 +946,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
             if (_id != id && !alreadyHasUser) {
               gltfLoader.load(_clientProps[_id].avatar, (newPlayerGltf) => {
                 const newPlayer = newPlayerGltf.scene;
+                newPlayer.scale.set(0.5, 0.5, 0.5);
                 newPlayer.playerInfo = {
                   radius: 0.5,
                   segment: new THREE.Line3(
@@ -1063,9 +955,9 @@ export default (overlayElement, joystick, loadingBarElement) => {
                   ),
                 };
 
-                newPlayer.position.set(0, 100, 120);
+                newPlayer.position.set(-13, -1.35, 0);
 
-                newPlayer.children[0].translateY(-1.5);
+                newPlayer.children[0].translateY(-2.05);
                 newPlayer.children[0].rotateY(Math.PI / 2);
                 newPlayer.children[0].rotateZ(-Math.PI);
 
@@ -1076,7 +968,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
                   _clientProps[_id].name,
                   {
                     font: font,
-                    size: 0.2,
+                    size: 0.04,
                     height: 0.01,
                     curveSegments: 2,
                     bevelEnabled: true,
@@ -1091,7 +983,6 @@ export default (overlayElement, joystick, loadingBarElement) => {
                   newPlayertextGeometry,
                   material
                 );
-                newPlayerText.translateY(0.6);
 
                 clients[_id] = {
                   mesh: newPlayer,
@@ -1229,7 +1120,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
 
               clients[Object.keys(_clientProps)[i]].nameMesh.position.set(
                 clients[Object.keys(_clientProps)[i]].mesh.position.x,
-                clients[Object.keys(_clientProps)[i]].mesh.position.y + 1,
+                clients[Object.keys(_clientProps)[i]].mesh.position.y + 0.05,
                 clients[Object.keys(_clientProps)[i]].mesh.position.z
               );
 
@@ -1275,15 +1166,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
     overlayElement,
     deviceType,
     loadingBarElement,
-    houseDetails,
-    house,
-    celebrate,
-    balance,
-    interactHint,
-    interact,
     reset,
-    buyHouse,
-    sellHouse,
     camera,
     controls,
     triggerRun,
@@ -1296,60 +1179,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
     handleTypingState,
     room,
     chatOpen,
-    currentIntersect,
     changeUser,
+    currentNft,
   };
 };
-
-// import { GUI } from "three/examples/jsm/libs/lil-gui.module.min.js";
-
-// let gui;
-
-// dat.gui
-//   gui = new GUI();
-//   gui.add(params, "firstPerson").onChange((v) => {
-//     if (!v) {
-//       camera.position
-//         .sub(controls.target)
-//         .normalize()
-//         .multiplyScalar(10)
-//         .add(controls.target);
-//     }
-//   });
-// const physicsFolder = gui.addFolder("Player");
-// physicsFolder.add(params, "physicsSteps", 0, 30, 1);
-// physicsFolder.add(params, "gravity", -100, 100, 0.01).onChange((v) => {
-//   params.gravity = parseFloat(v);
-// });
-// physicsFolder.add(params, "playerSpeed", 1, 20);
-// physicsFolder.open();
-
-// gui.add(params, "reset");
-// gui.open();
-
-// const params = {
-//   firstPerson: false,
-
-//   displayCollider: false,
-//   displayBVH: false,
-//   visualizeDepth: 50,
-//   gravity: -30,
-//   playerSpeed: 10,
-//   physicsSteps: 20,
-
-//   reset: reset,
-//   // Ray Params
-//   raycasters: {
-//     count: 150,
-//   },
-// };
-
-// let stand = null;
-// let wallk = null;
-// let runing = null;
-// let backward = null;
-// let leftwallk = null;
-// let rightwallk = null;
-// let falling = null;
-// let jumpForward = null;
-// let jumpBackward = null;

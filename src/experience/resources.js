@@ -1,9 +1,7 @@
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-
 import { FBXLoader } from "three/examples/jsm/loaders/FBXLoader.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import * as BufferGeometryUtils from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import housesData from "../houses";
 
 export default (loadingManager, THREE, MeshBVH, fn) => {
   const dracoLoader = new DRACOLoader(loadingManager);
@@ -11,54 +9,49 @@ export default (loadingManager, THREE, MeshBVH, fn) => {
   const gltfLoader = new GLTFLoader(loadingManager);
   gltfLoader.setDRACOLoader(dracoLoader);
 
-  gltfLoader.load("/models/palmmap2.glb", (mapGLTF) => {
+  gltfLoader.load("/models/spacemuseum.glb", (mapGLTF) => {
     /**
      * Map Setup
      */
     const Map = mapGLTF.scene;
-
+    let mars = null;
     Map.scale.setScalar(20);
     Map.updateMatrixWorld(true);
 
     const geometries = [];
-    const houses = [];
-    const buyArea = [];
-    const signs = [];
     Map.traverse((c) => {
       /**
        * Map Shadow Setup & save important 3Dobjects
        */
       c.castShadow = true;
       c.receiveShadow = true;
-      if (c.name.indexOf("HOUSE") !== -1) {
-        houses.push(c);
+      if (c.name.indexOf("MARS") !== -1) {
+        c.roughness = 1;
+        c.lightMapIntensity = 0;
+        mars = c;
+        console.log("mars :>> ", mars);
       }
-      if (c.name.indexOf("area") !== -1) {
-        c.userData.house = housesData[buyArea.length];
-        buyArea.push(c);
-      }
-      if (c.name.indexOf("Sign") !== -1) {
-        signs.push(c);
-      }
-      /**
-       * Get Geometries
-       */
       if (
-        c.name.indexOf("cloud") !== -1 ||
-        (c.parent && c.parent.name.indexOf("cloud") !== -1)
-      ) {
-        Map.remove(c);
-      }
-      // c.name.indexOf("ocean") !== -1 ||
-      if (
-        c.name.indexOf("cloud") !== -1 ||
-        c.name.indexOf("area") !== -1 ||
-        c.name.indexOf("token") !== -1 ||
-        (c.parent && c.parent.name.indexOf("area") !== -1) ||
-        (c.parent && c.parent.name.indexOf("token") !== -1)
+        c.name.indexOf("Cube024") !== -1 ||
+        c.name.indexOf("Cube020") !== -1 ||
+        c.name.indexOf("Cube017") !== -1 ||
+        c.name.indexOf("Cube016") !== -1 ||
+        (c.parent && c.parent.name.indexOf("Cube024") !== -1) ||
+        (c.parent && c.parent.name.indexOf("Cube020") !== -1) ||
+        (c.parent && c.parent.name.indexOf("Cube017") !== -1) ||
+        (c.parent && c.parent.name.indexOf("Cube016") !== -1)
       ) {
         return;
       } else if (c.geometry) {
+        if (
+          (c.material &&
+            c.material &&
+            c.material.name.indexOf("emision") !== -1) ||
+          c.material.name.indexOf("lighting texture.nft") !== -1 ||
+          c.material.name.indexOf("lighting texture") !== -1
+        ) {
+          c.layers.enable(1);
+        }
         const cloned = c.geometry.clone();
         cloned.applyMatrix4(c.matrixWorld);
         for (const key in cloned.attributes) {
@@ -87,16 +80,18 @@ export default (loadingManager, THREE, MeshBVH, fn) => {
      */
     const mapMixer = new THREE.AnimationMixer(Map);
     for (let index = 0; index < mapGLTF.animations.length; index++) {
-      let animationName = mapGLTF.animations[index].name;
+      const anim = mapMixer.clipAction(mapGLTF.animations[index]);
       if (
-        animationName.indexOf("buy") === -1 &&
-        animationName.indexOf("circle") === -1 &&
-        animationName.indexOf("circle") === -1
+        mapGLTF.animations[index].name.indexOf("Cube.024") !== -1 ||
+        mapGLTF.animations[index].name.indexOf("Cube.020") !== -1 ||
+        mapGLTF.animations[index].name.indexOf("Cube.017") !== -1 ||
+        mapGLTF.animations[index].name.indexOf("Cube.016") !== -1
       ) {
-        const anim = mapMixer.clipAction(mapGLTF.animations[index]);
-        // anim.timeScale *= 20;
-        anim.play();
+        anim.timeScale *= 3;
+        anim.clampWhenFinished = true;
+        anim.loop = THREE.LoopOnce;
       }
+      if (mapGLTF.animations[index].name.indexOf("Sphere") === -1) anim.play();
     }
 
     var fbxLoader = new FBXLoader(loadingManager);
@@ -113,9 +108,6 @@ export default (loadingManager, THREE, MeshBVH, fn) => {
               fn({
                 Map,
                 collider,
-                houses,
-                buyArea,
-                signs,
                 mapMixer,
                 gltfLoader,
                 fallingFbx,
@@ -123,6 +115,7 @@ export default (loadingManager, THREE, MeshBVH, fn) => {
                 RunningFbx,
                 JumpFbx,
                 WalkingFbx,
+                mars,
               });
             });
           });

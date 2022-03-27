@@ -20,14 +20,15 @@
         <img src="../assets/icons/Walking.svg" v-else alt="enter" />
       </div>
     </div>
+
     <div
       v-touch:tap="onInteract"
-      v-if="interactHint && deviceType() !== 'desktop'"
+      v-if="currentNft && deviceType() !== 'desktop'"
       style="bottom: 130px; right: 20px"
       class="action-button"
     >
       <div class="button-style">
-        <span>{{ currentIntersect.userData.house.sold ? "Sell" : "Buy" }}</span>
+        <span>See</span>
       </div>
     </div>
 
@@ -52,14 +53,11 @@ import { deviceType } from "../experience/helper";
 import { ref } from "vue";
 
 export default {
-  props: ["interactHint", "currentIntersect", "notification"],
+  props: ["notification", "currentNft"],
   setup(_, { emit }) {
     const running = ref(false);
     const onReset = () => {
       emit("onReset");
-    };
-    const onInteract = () => {
-      emit("onInteract");
     };
     const onRun = (e) => {
       emit("onRun");
@@ -71,11 +69,14 @@ export default {
     const openChat = () => {
       emit("openChat");
     };
+    const onInteract = () => {
+      emit("onInteract");
+    };
 
     return {
+      onInteract,
       deviceType,
       onReset,
-      onInteract,
       onRun,
       onJump,
       openChat,

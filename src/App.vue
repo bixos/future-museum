@@ -11,7 +11,7 @@
       "
     >
       <img
-        src="./assets/loading-text.png"
+        src="./assets/palmislands.png"
         class="loading-text"
         alt="loading-text"
       />
@@ -35,7 +35,7 @@
       </div>
       <div class="name-container">
         <input v-model="playerName" type="text" />
-        <button :disabled="canGoIn" @click="start()">Jump</button>
+        <button :disabled="canGoIn" @click="start()">Enter</button>
       </div>
     </div>
     <div
@@ -81,9 +81,6 @@
             <img src="./assets/icons/Bixos-light.svg" width="80" />
             <div class="nav-box-user">
               <span> {{ playerName }}</span>
-              <span class="nav-box-user-price">{{
-                balance.toLocaleString("es-ES")
-              }}</span>
             </div>
           </div>
           <div class="nav-box" @click="changeUser">
@@ -118,29 +115,10 @@
       </div>
     </div>
 
-    <div class="actions-container">
-      <div class="balance" :class="{ 'hide-balance': drawerIsActive }">
-        <img
-          v-if="deviceType() === 'desktop'"
-          src="./assets/icons/Bixos-light.svg"
-          class="logo"
-          alt="bixos-logo"
-        />
-        <img
-          v-else
-          src="./assets/icons/Bixos.svg"
-          class="logo"
-          alt="bixos-logo"
-        />
-        <span>{{ balance.toLocaleString("es-ES") }}</span>
-      </div>
-
-      <div class="user-button" @click="changeUser">
-        <img src="./assets/icons/Setting.svg" class="logo" alt="bixos-logo" />
-        <span class="player-name">{{ playerName }}</span>
-      </div>
+    <div class="user-button" @click="changeUser">
+      <img src="./assets/icons/Setting.svg" class="logo" alt="bixos-logo" />
+      <span class="player-name">{{ playerName }}</span>
     </div>
-
     <div
       v-show="!gettingName"
       v-if="deviceType() === 'desktop'"
@@ -148,23 +126,6 @@
     >
       <SocialMedia />
     </div>
-
-    <HouseModel
-      v-if="houseDetails"
-      :house="house"
-      @onHideModel="houseDetails = false"
-      @onBuyHouse="buyHouse()"
-      @onSellHouse="sellHouse()"
-    />
-    <lottie-player
-      v-if="celebrate"
-      src="https://assets2.lottiefiles.com/packages/lf20_rovf9gzu.json"
-      background="transparent"
-      speed="1"
-      class="CelebBuy"
-      loop
-      autoplay
-    ></lottie-player>
 
     <KeysHelper
       v-if="globalSocket"
@@ -176,17 +137,14 @@
       @updateUnseenMessages="updateNotification"
     />
     <MobileActions
-      :interactHint="interactHint"
-      :currentIntersect="currentIntersect"
-      @onInteract="interact()"
       @onRun="triggerRun()"
       @onJump="triggerJump()"
       @openChat="chatOpen = true"
+      @onInteract="interact()"
       v-show="!gettingName"
       :notification="notification"
+      :currentNft="currentNft"
     />
-    <!-- @onReset="reset(camera, controls)" -->
-
     <div
       style="
         -moz-user-select: none;
@@ -197,38 +155,42 @@
         z-index: 99999999999999999;
       "
       unselectable="on"
-      v-if="interactHint && deviceType() === 'desktop'"
+      v-if="currentNft && deviceType() === 'desktop'"
       class="hint"
     >
       <img src="./assets/icons/Enter.svg" class="enter-icon" alt="enter" />
-      <span>Press <strong>Enter</strong> to see Mansion Features.</span>
+      <span>Press <strong>Enter</strong> to see NFT.</span>
     </div>
 
-    <!-- <div
-      style="
-        -moz-user-select: none;
-        -webkit-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-        -o-user-select: none;
-      "
-      unselectable="on"
-      @click="requestFullScreen()"
-      v-if="deviceType() !== 'desktop'"
-      class="full-button"
-    >
-      <span>Full Screen</span>
-    </div> -->
+    <div v-if="showNft" class="nft-model">
+      <div style="z-index: 99999999999999999" class="nft-wraper"></div>
+      <div style="z-index: 99999999999999999" class="nft-details">
+        <img
+          @click="showNft = false"
+          src="./assets/icons/Close.svg"
+          class="close-icon"
+          alt="Close"
+        />
+        <img class="nft-img" :src="currentNft.image" />
+        <span class="nft-name">{{ currentNft.name }}</span>
+        <span class="nft-id">{{ currentNft.id }}</span>
+        <!-- @click="onBuyHouse()" -->
+        <div class="nft-button">
+          <a :href="currentNft.url" target="_blank" rel="noopener noreferrer"
+            >Open to Opensea</a
+          >
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, computed, compile } from "vue";
+import { ref, onMounted, computed } from "vue";
 
 import Drawer from "./components/Drawer.vue";
 import KeysHelper from "./components/KeysHelper.vue";
 import MobileActions from "./components/MobileActions.vue";
-import HouseModel from "./components/HouseModel.vue";
 import SocialMedia from "./components/SocialMedia.vue";
 
 import Telegram from "./assets/icons/Telegram.svg";
@@ -242,11 +204,12 @@ import experience from "./experience/experience";
 
 export default {
   name: "App",
-  components: { Drawer, KeysHelper, MobileActions, HouseModel, SocialMedia },
+  components: { Drawer, KeysHelper, MobileActions, SocialMedia },
 
   setup() {
     const subdomain = "bixosio"; // Replace with your custom subdomain
     const frameContainer = ref(null);
+    const showNft = ref(false);
 
     const overlayElement = ref({});
     const notification = ref(0);
@@ -322,15 +285,7 @@ export default {
     const {
       loading,
       deviceType,
-      houseDetails,
-      house,
-      celebrate,
-      balance,
-      interactHint,
-      interact,
       reset,
-      buyHouse,
-      sellHouse,
       camera,
       controls,
       triggerRun,
@@ -342,25 +297,28 @@ export default {
       handleTypingState,
       room,
       chatOpen,
-      currentIntersect,
       changeUser,
+      currentNft,
     } = experience(overlayElement, joystick, loadingBarElement);
-
+    window.addEventListener("keydown", (e) => {
+      switch (e.code) {
+        case "Enter":
+          interact();
+          break;
+      }
+    });
+    const interact = () => {
+      if (currentNft) {
+        showNft.value = true;
+      }
+    };
     return {
       joystick,
       loading,
       overlayElement,
       deviceType,
       loadingBarElement,
-      houseDetails,
-      house,
-      celebrate,
-      balance,
-      interactHint,
-      interact,
       reset,
-      buyHouse,
-      sellHouse,
       camera,
       controls,
       triggerRun,
@@ -373,11 +331,13 @@ export default {
       handleTypingState,
       room,
       chatOpen,
-      currentIntersect,
       canGoIn,
       changeUser,
       notification,
       updateNotification,
+      currentNft,
+      interact,
+      showNft,
     };
   },
   data() {
@@ -446,6 +406,132 @@ export default {
 </script>
 
 <style lang="scss">
+.hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 40px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 400px;
+  height: 120px;
+  background: linear-gradient(
+    263.11deg,
+    #64ccc9 5.68%,
+    #00a3e0 94.89%,
+    #00a3e0 94.89%
+  );
+  border: 1px solid #ffffff;
+  box-sizing: border-box;
+  border-radius: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  span {
+    font-size: 20px;
+    line-height: 23px;
+    max-width: 270px;
+    margin-left: 10px;
+    color: #ffffff;
+  }
+  img {
+    width: 60px;
+  }
+}
+.nft-wraper {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(37, 55, 70, 0.75);
+}
+.nft-details {
+  width: 400px;
+  height: 540px;
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  left: 0;
+  right: 0;
+  margin-left: auto;
+  margin-right: auto;
+  top: calc((100vh - 533px) / 2);
+  @media only screen and (max-width: 1250px) {
+    top: 15vh;
+    width: 320.4px;
+    height: 432px;
+  }
+  background-image: url("./assets/model/model.png");
+  background-size: contain;
+  .close-icon {
+    position: absolute;
+    top: -40px;
+    right: 0;
+    height: 25px;
+    z-index: 10;
+    cursor: pointer;
+    &:active {
+      animation: press 0.2s 1 linear;
+    }
+  }
+  .nft-img {
+    width: 70%;
+    left: 14.5%;
+    position: absolute;
+  }
+  .nft-name {
+    font-weight: 400;
+    font-size: 21.2658px;
+    line-height: 25px;
+    color: #0ca6d7;
+    position: absolute;
+    top: 57%;
+    text-align: center;
+    width: 100%;
+  }
+  .nft-id {
+    font-style: normal;
+    font-weight: 800;
+    font-size: 66.4557px;
+    line-height: 78px;
+    color: #0ca6d7;
+    position: absolute;
+    top: 62%;
+    width: 100%;
+    text-align: center;
+  }
+  .nft-button {
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 23px;
+    color: #ffffff !important;
+    position: absolute;
+    top: 81%;
+    width: 245px;
+    height: 47.13px;
+    text-align: center;
+    text-decoration: none;
+    background-size: cover;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image: url("./assets/model/button.png");
+    a {
+      color: #ffffff !important;
+      text-decoration: none;
+    }
+  }
+  @keyframes press {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(0.92);
+    }
+    to {
+      transform: scale(1);
+    }
+  }
+}
 html,
 body {
   padding: 0;
@@ -521,18 +607,18 @@ canvas {
     height: 30vh;
   }
   input {
+    background: #0e1525;
+    border: 0.786111px solid #e05100;
+    box-sizing: border-box;
+    box-shadow: inset 3.14444px 3.14444px 7.86111px #000000;
+    border-radius: 12.5778px;
     margin-bottom: 20px;
     height: 50px;
     width: 300px;
     outline: none;
-    color: #239eda;
+    color: #ffffff;
     text-align: center;
-    background: #ffffff;
-    border: 1px solid #ffffff;
     box-sizing: border-box;
-    box-shadow: -4px -4px 10px rgb(255 255 255 / 50%),
-      inset 2px 2px 6px rgb(0 47 90 / 75%);
-    border-radius: 16px;
     font-weight: 700;
     font-size: 30px;
     line-height: 37px;
@@ -549,15 +635,16 @@ canvas {
     height: 50px;
     width: 300px;
     outline: none;
-    border: solid 1px #00e8da;
-    color: #2a3869;
+    background: #e05100;
+    box-shadow: 0px 1.57222px 15.7222px #e12900;
+    border-radius: 12.5778px;
+    border: none;
+    color: #ffffff;
     padding-left: 20px;
     margin-left: 16px;
     padding-right: 20px;
-    background: #00e8da;
     cursor: pointer;
     margin-bottom: 20px;
-    box-shadow: 0px 6px 10px rgb(32 66 133 / 75%);
     border-radius: 16px;
     transform: all 0.5s;
     &:active {
@@ -594,19 +681,6 @@ canvas {
   height: 100px;
 }
 
-.interact-hint {
-  width: 200px;
-  height: 100px;
-  background: grey;
-  z-index: 99999;
-  position: absolute;
-  left: 0;
-  right: 0;
-  margin-left: auto;
-  margin-right: auto;
-  top: 10%;
-}
-
 .actions-container {
   display: flex;
   position: absolute;
@@ -622,54 +696,10 @@ canvas {
   }
 }
 
-.balance {
-  min-width: 200px;
-  max-width: 350px;
-  height: 40px;
-  background: #2a3869;
-  // box-shadow: 0px 10px 30px rgb(28 56 63 / 75%);
-  border-radius: 50px;
-  display: flex;
-  align-items: center;
-  padding-left: 15px;
-  color: white;
-  span {
-    margin-left: 9px;
-  }
-  .logo {
-    height: 24px;
-    width: 24px;
-  }
-  @media only screen and (max-width: 1024px) {
-    width: 30px;
-    min-width: 155px;
-    max-width: 30vw;
-    height: 40px;
-    gap: 5px;
-    border-radius: 16px;
-    background: #fff;
-    color: #239eda;
-    font-weight: 900;
-    display: flex;
-    align-items: center;
-    // box-shadow: 0px 10px 30px rgba(28, 56, 63, 0.75);
-    padding: 0 5px;
-    transition: all 0.3s ease;
-    opacity: 1;
-    .logo {
-      height: 25px;
-      width: 25px;
-    }
-  }
-  @media only screen and (max-width: 320px) {
-    min-width: 135px;
-  }
-}
-.hide-balance {
-  opacity: 0;
-}
-
 .user-button {
+  position: absolute;
+  right: 20px;
+  top: 20px;
   min-width: 200px;
   max-width: 350px;
   height: 40px;
@@ -726,50 +756,10 @@ canvas {
   //       brightness(94%) contrast(100%);
   //   }
 }
+
 .drawer-logo {
   filter: invert(52%) sepia(40%) saturate(945%) hue-rotate(148deg)
     brightness(94%) contrast(100%);
-}
-.hint {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 40px;
-  margin-left: auto;
-  margin-right: auto;
-  width: 400px;
-  height: 120px;
-  background: linear-gradient(
-    263.11deg,
-    #64ccc9 5.68%,
-    #00a3e0 94.89%,
-    #00a3e0 94.89%
-  );
-  border: 1px solid #ffffff;
-  box-sizing: border-box;
-  border-radius: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  span {
-    font-size: 20px;
-    line-height: 23px;
-    max-width: 270px;
-    margin-left: 10px;
-    color: #ffffff;
-  }
-  img {
-    width: 60px;
-  }
-}
-.CelebBuy {
-  position: absolute;
-  right: 0;
-  top: 00vh;
-  margin-left: auto;
-  margin-right: auto;
-  width: 100vw;
-  z-index: 100;
 }
 
 .full-button {
@@ -791,6 +781,7 @@ canvas {
     animation: press 0.2s 1 linear;
   }
 }
+
 .desktop-background-loading-name {
   background: white;
   background-image: url("./assets/citybackground3.jpg");
@@ -802,11 +793,11 @@ canvas {
   .loading-text {
     position: absolute;
     top: 0;
-    right: 0;
+    left: 0;
   }
   .loading-bar-container {
     top: auto;
-    right: 30vh;
+    left: 30vh;
     bottom: 20vh;
   }
 }
@@ -828,23 +819,24 @@ canvas {
     bottom: 10vh;
   }
 }
+
 .desktop-background-loading {
   background: white;
-  background-image: url("./assets/citybackground2.jpg");
+  background-image: url("./assets/a2mobileb2.jpg");
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
 
   z-index: 999999999;
   .loading-text {
+    max-width: 506px;
     position: absolute;
-    top: 0;
-    right: 0;
+    top: 150px;
+    left: 150px;
   }
   .loading-bar-container {
-    top: auto;
-    right: 30vh;
-    bottom: 20vh;
+    top: 400px;
+    left: 180px;
   }
 }
 .mobile-background-loading {
@@ -874,21 +866,24 @@ canvas {
   top: 0;
   left: 0;
   filter: blur(0);
-  img {
-    max-width: 90vw;
-  }
 }
 
 .loading-bar-container {
-  border: #239eda 6px solid;
-  background: #1c7eae;
-  border-radius: 20px;
+  background: #000000;
+  border: 2px solid #de5000;
+  box-shadow: 0px 0px 10px rgba(224, 81, 0, 0.5),
+    4px 4px 40px rgba(224, 81, 0, 0.5);
+  border-radius: 6px;
   z-index: 2;
   position: absolute;
   top: 30%;
-
   height: 50px;
-  width: 255px;
+  width: 410px;
+  overflow: hidden;
+  @media only screen and (max-width: 1024px) {
+    width: 250px;
+  }
+
   .loading-span {
     position: absolute;
     top: 8px;
@@ -904,16 +899,19 @@ canvas {
 .loading-bar {
   position: absolute;
   top: 0;
+  left: -17px;
   background-image: url("./assets/loading-bar.png");
   height: 50px;
-  width: 255px;
+  width: 462px;
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
-  // background: #ffffff;
   transform: scaleX(0);
   transform-origin: top left;
   transition: transform 0.5s;
+  @media only screen and (max-width: 1024px) {
+    width: 297px;
+  }
 }
 .overlay.ended {
   filter: blur(1.5rem);
