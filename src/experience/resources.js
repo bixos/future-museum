@@ -43,15 +43,6 @@ export default (loadingManager, THREE, MeshBVH, fn) => {
       ) {
         return;
       } else if (c.geometry) {
-        if (
-          (c.material &&
-            c.material &&
-            c.material.name.indexOf("emision") !== -1) ||
-          c.material.name.indexOf("lighting texture.nft") !== -1 ||
-          c.material.name.indexOf("lighting texture") !== -1
-        ) {
-          c.layers.enable(1);
-        }
         const cloned = c.geometry.clone();
         cloned.applyMatrix4(c.matrixWorld);
         for (const key in cloned.attributes) {

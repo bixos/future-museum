@@ -491,6 +491,8 @@ export default (overlayElement, joystick, loadingBarElement) => {
           break;
         }
       }
+      // console.log("player.position.x :>> ", player.position.x);
+      // console.log("player.position.z :>> ", player.position.z);
     }
     if (mars) {
       // console.log("mars :>> ", mars);
@@ -656,16 +658,7 @@ export default (overlayElement, joystick, loadingBarElement) => {
     }
   });
 
-  const {
-    renderer,
-    camera,
-    scene,
-    clock,
-    bloomComposer,
-    finalComposer,
-    darkenNonBloomed,
-    restoreMaterial,
-  } = init(THREE);
+  const { renderer, camera, scene, clock } = init(THREE);
 
   const changeUser = () => {
     for (const key in clients) {

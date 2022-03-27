@@ -1,26 +1,4 @@
-import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
-import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
-import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
-import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
-
-const ENTIRE_SCENE = 0,
-  BLOOM_SCENE = 1;
-
 export default (THREE, OrbitControls) => {
-  const bloomLayer = new THREE.Layers();
-  bloomLayer.set(BLOOM_SCENE);
-  const params = {
-    bloomStrength: 1,
-    bloomThreshold: 0,
-    bloomRadius: 0,
-    enableSSR: true,
-    autoRotate: true,
-    otherMeshes: true,
-    groundReflector: true,
-  };
-  const darkMaterial = new THREE.MeshBasicMaterial({ color: "black" });
-  const materials = {};
-
   const renderer = new THREE.WebGLRenderer({
     antialias: true,
     powerPreference: "high-performance",
@@ -49,10 +27,10 @@ export default (THREE, OrbitControls) => {
     60,
     window.innerWidth / window.innerHeight,
     0.01,
-    500
+    50000
   );
 
-  camera.far = 500;
+  camera.far = 50000;
   camera.updateProjectionMatrix();
   camera.position.set(-200, 25, -200);
   camera.lookAt(scene.position);
@@ -68,20 +46,6 @@ export default (THREE, OrbitControls) => {
   scene.add(light2);
 
   let clock = new THREE.Clock();
-
-  function darkenNonBloomed(obj) {
-    if (obj.isMesh && bloomLayer.test(obj.layers) === false) {
-      materials[obj.uuid] = obj.material;
-      obj.material = darkMaterial;
-    }
-  }
-
-  function restoreMaterial(obj) {
-    if (materials[obj.uuid]) {
-      obj.material = materials[obj.uuid];
-      delete materials[obj.uuid];
-    }
-  }
 
   const cubeTextureLoader = new THREE.CubeTextureLoader();
   cubeTextureLoader.load(
@@ -107,40 +71,6 @@ export default (THREE, OrbitControls) => {
 
   scene.add(new THREE.AmbientLight(0x404040));
 
-  const renderScene = new RenderPass(scene, camera);
-
-  const bloomPass = new UnrealBloomPass(
-    new THREE.Vector2(window.innerWidth, window.innerHeight),
-    1.5,
-    0.4,
-    0.85
-  );
-  bloomPass.threshold = params.bloomThreshold;
-  bloomPass.strength = params.bloomStrength;
-  bloomPass.radius = params.bloomRadius;
-
-  const bloomComposer = new EffectComposer(renderer);
-  bloomComposer.renderToScreen = false;
-  bloomComposer.addPass(renderScene);
-  bloomComposer.addPass(bloomPass);
-  const finalPass = new ShaderPass(
-    new THREE.ShaderMaterial({
-      uniforms: {
-        baseTexture: { value: null },
-        bloomTexture: { value: bloomComposer.renderTarget2.texture },
-      },
-      vertexShader: document.getElementById("vertexshader").textContent,
-      fragmentShader: document.getElementById("fragmentshader").textContent,
-      defines: {},
-    }),
-    "baseTexture"
-  );
-  finalPass.needsSwap = true;
-
-  const finalComposer = new EffectComposer(renderer);
-  finalComposer.addPass(renderScene);
-  finalComposer.addPass(finalPass);
-
   /**
    * Controls
    */
@@ -152,8 +82,6 @@ export default (THREE, OrbitControls) => {
       camera.updateProjectionMatrix();
 
       renderer.setSize(window.innerWidth, window.innerHeight);
-      bloomComposer.setSize(window.innerWidth, window.innerHeight);
-      finalComposer.setSize(window.innerWidth, window.innerHeight);
     },
     false
   );
@@ -164,9 +92,5 @@ export default (THREE, OrbitControls) => {
     camera,
     scene,
     clock,
-    bloomComposer,
-    finalComposer,
-    darkenNonBloomed,
-    restoreMaterial,
   };
 };
