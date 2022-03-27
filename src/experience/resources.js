@@ -9,7 +9,7 @@ export default (loadingManager, THREE, MeshBVH, fn) => {
   const gltfLoader = new GLTFLoader(loadingManager);
   gltfLoader.setDRACOLoader(dracoLoader);
 
-  gltfLoader.load("/models/spacemuseum.glb", (mapGLTF) => {
+  gltfLoader.load("/models/spacemuseum2.glb", (mapGLTF) => {
     /**
      * Map Setup
      */
